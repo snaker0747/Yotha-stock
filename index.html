@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบติดตามโครงการ สำนักช่าง</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-view" class="view active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <i class="ri-building-4-line login-icon"></i>
+                    <h2>ระบบติดตามโครงการ</h2>
+                    <p>สำนักช่าง ปีงบประมาณ 2569</p>
+                </div>
+                <div class="login-body">
+                    <div class="form-group">
+                        <label for="role-select">เลือกรูปแบบการเข้าสู่ระบบ</label>
+                        <select id="role-select" class="form-control form-select-large">
+                            <option value="executive">เข้าสู่ระบบในฐานะ: ผู้บริหาร (ดูภาพรวม)</option>
+                            <option value="engineer">เข้าสู่ระบบในฐานะ: นายช่างผู้ควบคุมงาน</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="engineer-select-group" style="display: none;">
+                        <label for="engineer-name">เลือกชื่อนายช่าง</label>
+                        <select id="engineer-name" class="form-control form-select-large">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <button id="login-btn" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard-view" class="view">
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-box">
+                    <i class="ri-dashboard-2-line text-primary"></i>
+                </div>
+                <h1>ระบบติดตามโครงการ ปีงบประมาณ 2569</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-profile">
+                    <div class="avatar"><i class="ri-user-line"></i></div>
+                    <span id="user-info" class="user-info">ผู้บริหาร</span>
+                </div>
+                <button id="add-project-btn" class="btn btn-outline" style="display: none;">
+                    <i class="ri-add-line"></i> เพิ่มโครงการ
+                </button>
+                <button id="logout-btn" class="btn btn-ghost" title="ออกจากระบบ">
+                    <i class="ri-logout-box-r-line"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <!-- Summary Cards -->
+            <section class="summary-cards" id="summary-cards">
+                <!-- Injected via JS -->
+            </section>
+
+            <!-- Charts Section (Executive Only) -->
+            <section class="charts-section" id="charts-section" style="display: none;">
+                <div class="chart-card">
+                    <h3>สถานะโครงการทั้งหมด</h3>
+                    <div class="chart-container">
+                        <canvas id="statusBarChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>สัดส่วนงบประมาณ (แยกตามวิธีจัดซื้อ)</h3>
+                    <div class="chart-container">
+                        <canvas id="budgetDoughnutChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Status Tabs -->
+            <section class="status-tabs-container">
+                <div class="status-tabs" id="status-tabs">
+                    <!-- Injected via JS -->
+                </div>
+                <div class="view-toggles">
+                    <button class="view-toggle active"><i class="ri-table-line"></i> ตาราง</button>
+                    <button class="view-toggle"><i class="ri-layout-column-line"></i> Kanban</button>
+                    <button class="view-toggle"><i class="ri-bar-chart-horizontal-line"></i> ไทม์ไลน์</button>
+                    <button class="view-toggle"><i class="ri-money-dollar-circle-line"></i> งบประมาณ</button>
+                </div>
+            </section>
+
+            <!-- Filters -->
+            <section class="filters">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="ค้นหาโครงการ / เลขที่สัญญา / ช่าง...">
+                </div>
+                <div class="filter-dropdowns">
+                    <select id="procurement-filter" class="form-select">
+                        <option value="">วิธีจัดซื้อจัดจ้างทั้งหมด</option>
+                        <option value="เฉพาะเจาะจง">เฉพาะเจาะจง</option>
+                        <option value="E-Bidding">E-Bidding</option>
+                    </select>
+                    <select id="status-filter" class="form-select">
+                        <option value="">สถานะทั้งหมด</option>
+                        <option value="จัดทำแผน">จัดทำแผน</option>
+                        <option value="จัดทำรายงานขอซื้อ/จ้าง">จัดทำรายงานขอซื้อ/จ้าง</option>
+                        <option value="จัดทำเอกสาร E-bidding">จัดทำเอกสาร E-bidding</option>
+                        <option value="ประกาศผู้ชนะ">ประกาศผู้ชนะ</option>
+                        <option value="ทำ/ลงนามสัญญา">ทำ/ลงนามสัญญา</option>
+                        <option value="ดำเนินงานโครงการ">ดำเนินงานโครงการ</option>
+                        <option value="ตรวจรับงาน">ตรวจรับงาน</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Data Table -->
+            <section class="data-table-container">
+                <table class="data-table" id="projects-table">
+                    <thead>
+                        <tr>
+                            <th>เลขที่สัญญา / ชื่อโครงการ</th>
+                            <th>วิธีจัดซื้อจัดจ้าง</th>
+                            <th>ช่างผู้ควบคุมงาน</th>
+                            <th>คณะกรรมการตรวจรับ</th>
+                            <th>งบประมาณ</th>
+                            <th>สถานะ</th>
+                            <th>ความคืบหน้า</th>
+                            <th>หมายเหตุ/รายละเอียดโครงการ</th>
+                            <th id="action-col" style="display: none;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projects-tbody">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>อัปเดตความคืบหน้าโครงการ</h2>
+                <button id="close-modal" class="icon-btn"><i class="ri-close-line"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <input type="hidden" id="edit-id">
+                    
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>เลขที่สัญญา</label>
+                            <input type="text" id="edit-contractNo" class="form-control" required>
+                        </div>
+                        <div class="form-group half">
+                            <label>ชื่อโครงการ / กิจกรรม</label>
+                            <input type="text" id="edit-name" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>วิธีจัดซื้อจัดจ้าง</label>
+                            <select id="edit-procurement" class="form-control">
+                                <option value="เฉพาะเจาะจง">เฉพาะเจาะจง</option>
+                                <option value="E-Bidding">E-Bidding</option>
+                            </select>
+                        </div>
+                        <div class="form-group half">
+                            <label>งบประมาณ (บาท)</label>
+                            <input type="number" id="edit-budget" class="form-control" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>ช่างผู้ควบคุมงาน</label>
+                        <input type="text" id="edit-engineer" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>คณะกรรมการตรวจรับ</label>
+                        <input type="text" id="edit-committee" class="form-control" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>สถานะโครงการ</label>
+                            <select id="edit-status" class="form-control">
+                                <option value="จัดทำแผน">จัดทำแผน</option>
+                                <option value="จัดทำรายงานขอซื้อ/จ้าง">จัดทำรายงานขอซื้อ/จ้าง</option>
+                                <option value="จัดทำเอกสาร E-bidding">จัดทำเอกสาร E-bidding</option>
+                                <option value="ประกาศผู้ชนะ">ประกาศผู้ชนะ</option>
+                                <option value="ทำ/ลงนามสัญญา">ทำ/ลงนามสัญญา</option>
+                                <option value="ดำเนินงานโครงการ">ดำเนินงานโครงการ</option>
+                                <option value="ตรวจรับงาน">ตรวจรับงาน</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group half">
+                            <label>ความคืบหน้า (%)</label>
+                            <input type="number" id="edit-progress" min="0" max="100" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>หมายเหตุ/รายละเอียดโครงการ</label>
+                        <textarea id="edit-notes" class="form-control" rows="3" placeholder="ระบุรายละเอียดการปฏิบัติงาน หรือปัญหาที่พบ..."></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-edit" class="btn btn-outline">ยกเลิก</button>
+                        <button type="submit" class="btn btn-primary">บันทึกข้อมูล</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
