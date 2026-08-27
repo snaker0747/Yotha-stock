@@ -1,30 +1,461 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบการเบิกจ่ายวัสดุ</title>
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-    iframe { width: 100%; height: 100%; border: none; }
-  </style>
-</head>
-<body>
-  <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycbwC3xveGqgNQrVpNG3gQOK3nuAFT6D6j2uNn8xZl6BoMZj7zg58i3Xot3Fbb7czQIAg0Q/exec" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>ศูนย์รวมระบบงาน ฝ่ายสาธารณูปโภค ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง จังหวัดระยอง</title>
+  <meta name="description" content="ศูนย์รวมระบบงาน ฝ่ายสาธารณูปโภค ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง จังหวัดระยอง">
+  <meta name="theme-color" content="#191A23">
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
+  <link rel="apple-touch-icon" href="assets/images/logo.png">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    window.addEventListener('message', function(e) {
-      if (!e.data || !e.data.type) return;
-      if (e.data.type === 'SET_DATA') {
-        localStorage.setItem(e.data.key, e.data.value);
-      } else if (e.data.type === 'REMOVE_DATA') {
-        localStorage.removeItem(e.data.key);
-      } else if (e.data.type === 'INIT_STORAGE') {
-        var data = {};
-        for (var i = 0; i < localStorage.length; i++) {
-          var k = localStorage.key(i);
-          data[k] = localStorage.getItem(k);
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'pos-lime': '#B9FF66',
+            'pos-dark': '#191A23',
+            'pos-gray': '#F3F3F3',
+            'pos-gray-dark': '#2A2B36',
+          }
         }
-        e.source.postMessage({ type: 'STORAGE_SYNC', data: data }, '*');
+      }
+    }
+  </script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-white min-h-screen flex flex-col selection:bg-[#B9FF66] selection:text-[#191A23] text-gray-900 antialiased">
+
+  <!-- PIN Code Security Overlay (PIN: 888888) -->
+  <div id="pin-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#191A23]/95 backdrop-blur-md overflow-y-auto">
+    <div class="bg-white border-2 border-[#191A23] rounded-3xl p-6 sm:p-8 max-w-sm sm:max-w-md w-full shadow-[0px_8px_0px_#B9FF66] relative my-auto">
+      
+      <!-- Brand Logo & Security Badge -->
+      <div class="flex flex-col items-center text-center space-y-2.5 sm:space-y-3 mb-4 sm:mb-5">
+        <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[#191A23] bg-amber-50 p-1 shadow-md">
+          <img src="assets/images/logo.png" alt="โลโก้สำนักช่าง" class="w-full h-full object-contain">
+        </div>
+        
+        <div>
+          <span class="positivus-tag text-xs sm:text-sm font-bold">
+            ระบบความปลอดภัย
+          </span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-[#191A23] mt-2 leading-tight">
+            กรุณากรอกรหัส PIN 6 หลัก
+          </h2>
+          <p class="text-gray-500 text-xs sm:text-sm mt-0.5 font-medium">
+            ศูนย์รวมระบบงาน
+          </p>
+        </div>
+      </div>
+
+      <!-- 6 PIN Digit Indicators -->
+      <div id="pin-boxes" class="flex items-center justify-center gap-2 sm:gap-2.5 my-3 sm:my-4">
+        <div class="pin-digit-box"></div>
+        <div class="pin-digit-box"></div>
+        <div class="pin-digit-box"></div>
+        <div class="pin-digit-box"></div>
+        <div class="pin-digit-box"></div>
+        <div class="pin-digit-box"></div>
+      </div>
+
+      <!-- Error Message -->
+      <div id="pin-error-message" class="hidden text-center text-red-600 text-xs sm:text-sm font-bold mb-3 flex items-center justify-center gap-1.5 animate-bounce">
+        <span>⚠️</span> <span>รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</span>
+      </div>
+
+      <!-- Touch Numeric Keypad -->
+      <div class="grid grid-cols-3 gap-2 sm:gap-2.5 max-w-[260px] sm:max-w-[290px] mx-auto mt-1 sm:mt-2">
+        <button type="button" class="keypad-btn" data-digit="1">1</button>
+        <button type="button" class="keypad-btn" data-digit="2">2</button>
+        <button type="button" class="keypad-btn" data-digit="3">3</button>
+        <button type="button" class="keypad-btn" data-digit="4">4</button>
+        <button type="button" class="keypad-btn" data-digit="5">5</button>
+        <button type="button" class="keypad-btn" data-digit="6">6</button>
+        <button type="button" class="keypad-btn" data-digit="7">7</button>
+        <button type="button" class="keypad-btn" data-digit="8">8</button>
+        <button type="button" class="keypad-btn" data-digit="9">9</button>
+        <button type="button" class="keypad-btn keypad-btn-action" data-action="clear">ล้าง</button>
+        <button type="button" class="keypad-btn" data-digit="0">0</button>
+        <button type="button" class="keypad-btn keypad-btn-action" data-action="delete" title="ลบตัวเลข">⌫</button>
+      </div>
+
+      <!-- Footer Info / Organization Credit -->
+      <div class="mt-4 sm:mt-5 pt-3 border-t border-gray-200 text-center text-[11px] sm:text-xs text-gray-500 leading-relaxed">
+        <div>จัดทำโดย ฝ่ายสาธารณูปโภค ส่วนการโยธา</div>
+        <div class="font-medium text-gray-700 mt-0.5">สำนักช่าง เทศบาลนครระยอง จังหวัดระยอง</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Top Announcement Bar -->
+  <aside aria-label="แถบประกาศเทศบาล" class="bg-[#191A23] text-white text-[11px] sm:text-xs py-2 px-3 sm:px-6 border-b border-black">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 truncate">
+        <span class="w-2 h-2 rounded-full bg-[#B9FF66] animate-ping flex-shrink-0"></span>
+        <span class="font-medium text-gray-300 truncate">เทศบาลนครระยอง | สำนักช่าง</span>
+      </div>
+      <div class="flex items-center gap-3 text-gray-400 flex-shrink-0">
+        <span id="live-time" class="font-mono text-[10px] sm:text-xs"></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-[#191A23] transition-all">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+      
+      <!-- Brand / Logo -->
+      <a href="index.html" class="flex items-center gap-2.5 sm:gap-3.5 group min-w-0">
+        <div class="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-[#191A23] bg-amber-50 p-0.5 shadow-sm overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+          <img src="assets/images/logo.png" alt="โลโก้สำนักช่าง เทศบาลนครระยอง" class="w-full h-full object-contain">
+        </div>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="text-base sm:text-lg md:text-xl font-bold tracking-tight text-[#191A23] leading-tight truncate">
+              สำนักช่าง
+            </span>
+            <span class="text-[10px] sm:text-xs bg-[#B9FF66] text-[#191A23] font-bold px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded-full border border-[#191A23] flex-shrink-0">
+              HUB
+            </span>
+          </div>
+          <span class="text-[11px] sm:text-xs text-gray-600 font-medium leading-tight truncate">
+            เทศบาลนครระยอง
+          </span>
+        </div>
+      </a>
+
+      <!-- Quick Nav Links (Desktop & Tablet) -->
+      <nav aria-label="เมนูหลัก" class="hidden md:flex items-center gap-6 text-sm font-medium">
+        <a href="#systems-section" class="text-gray-700 hover:text-black transition-colors font-semibold">ระบบงานทั้งหมด</a>
+        <a href="https://rayongcity.go.th" target="_blank" rel="noopener noreferrer" class="text-gray-600 hover:text-black transition-colors">เว็บเทศบาลนครระยอง ↗</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button 
+          id="logout-btn" 
+          type="button" 
+          title="ล็อกระบบเพื่อความปลอดภัย"
+          class="btn-positivus-outline text-xs sm:text-sm font-semibold flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-gray-700 hover:text-red-600 hover:border-red-600 cursor-pointer">
+          <span>🔒 ล็อกระบบ</span>
+        </button>
+
+        <button 
+          id="help-modal-btn" 
+          type="button" 
+          class="btn-positivus-outline text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 cursor-pointer">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <span class="hidden sm:inline">ติดต่อ / ช่วยเหลือ</span>
+          <span class="sm:hidden text-xs">ช่วยเหลือ</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Hero Section (Positivus Style) -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 md:pt-14 pb-8 sm:pb-12">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center">
+      
+      <!-- Left Column: Title & Subtitle -->
+      <div class="lg:col-span-7 flex flex-col items-start space-y-3.5 sm:space-y-5">
+        
+        <div class="inline-flex items-center gap-2 bg-[#F3F3F3] border border-[#191A23] px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium">
+          <span class="w-2 h-2 rounded-full bg-[#B9FF66]"></span>
+          <span>เทศบาลนครระยอง</span>
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#191A23] leading-tight">
+          ศูนย์รวมระบบงาน
+          <span class="block text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mt-2 sm:mt-2.5">
+            ฝ่ายสาธารณูปโภค ส่วนการโยธา
+          </span>
+          <span class="block text-lg sm:text-xl lg:text-2xl font-bold text-gray-700 mt-1 sm:mt-1.5">
+            สำนักช่าง เทศบาลนครระยอง
+          </span>
+          <span class="block text-base sm:text-lg lg:text-xl font-semibold text-gray-600 mt-0.5 sm:mt-1">
+            จังหวัดระยอง
+          </span>
+        </h1>
+
+        <p class="text-gray-600 text-xs sm:text-base lg:text-lg leading-relaxed max-w-xl">
+          พอร์ทัลกลางสำหรับเข้าใช้งานเว็บแอปพลิเคชันและระบบสารสนเทศงานช่าง รวบรวมลิงก์งานติดตามโครงการ ข้อมูลไฟฟ้าสาธารณะ และระบบเบิกจ่ายวัสดุไว้ในที่เดียว เพื่อการทำงานที่สะดวก รวดเร็ว และเป็นระบบ
+        </p>
+
+        <!-- Quick Jump CTA -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1 sm:pt-2 w-full sm:w-auto">
+          <a href="#systems-section" class="btn-positivus-primary text-xs sm:text-base font-semibold inline-flex items-center justify-center gap-2 shadow-md">
+            <span>เข้าสู่ระบบงาน</span>
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+            </svg>
+          </a>
+          <a href="https://rayongcity.go.th" target="_blank" rel="noopener noreferrer" class="btn-positivus-outline text-xs sm:text-base font-semibold inline-flex items-center justify-center gap-2">
+            <span>เว็บหลักเทศบาลนครระยอง ↗</span>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Positivus Hero Megaphone Illustration -->
+      <div class="lg:col-span-5 flex items-center justify-center relative mt-2 sm:mt-0">
+        <div class="w-full flex justify-center animate-float max-w-[240px] sm:max-w-[320px] md:max-w-[360px] lg:max-w-[420px]">
+          <div id="hero-illustration-container" class="w-full flex justify-center">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Marquee / Ticker Bar (Positivus Partner Bar) -->
+  <section class="border-y-2 border-[#191A23] bg-[#F3F3F3] py-3 sm:py-4 my-2 sm:my-4">
+    <div class="ticker-wrap max-w-7xl mx-auto">
+      <div class="ticker-move flex items-center gap-8 sm:gap-16 text-xs sm:text-base font-bold text-gray-700 uppercase tracking-wider">
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#B9FF66] border border-black rounded-full"></span> งานติดตามโครงการ</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#191A23] rounded-full"></span> ข้อมูลไฟฟ้าสาธารณะ GIS</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#B9FF66] border border-black rounded-full"></span> ระบบเบิกจ่ายวัสดุและสต็อก</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#191A23] rounded-full"></span> ฝ่ายสาธารณูปโภค</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#B9FF66] border border-black rounded-full"></span> ส่วนการโยธา</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#191A23] rounded-full"></span> สำนักช่าง เทศบาลนครระยอง</div>
+        <!-- Duplicate for infinite marquee -->
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#B9FF66] border border-black rounded-full"></span> งานติดตามโครงการ</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#191A23] rounded-full"></span> ข้อมูลไฟฟ้าสาธารณะ GIS</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#B9FF66] border border-black rounded-full"></span> ระบบเบิกจ่ายวัสดุและสต็อก</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#191A23] rounded-full"></span> ฝ่ายสาธารณูปโภค</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#B9FF66] border border-black rounded-full"></span> ส่วนการโยธา</div>
+        <div class="flex items-center gap-2 sm:gap-3"><span class="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-[#191A23] rounded-full"></span> สำนักช่าง เทศบาลนครระยอง</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Systems / Services Section (Positivus Style Cards Grid) -->
+  <main id="systems-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex-1 w-full">
+    
+    <!-- Section Header (Positivus Style) -->
+    <div class="flex flex-col md:flex-row md:items-center gap-3 sm:gap-8 mb-6 sm:mb-10">
+      <div>
+        <span class="positivus-tag text-xl sm:text-3xl font-extrabold tracking-tight">
+          ระบบงานบริการ
+        </span>
+      </div>
+      <p class="text-gray-600 text-xs sm:text-base max-w-xl">
+        เลือกคลิกการ์ดระบบงานที่ต้องการเข้าใช้งาน เพื่อเปิดหน้าเว็บแอปพลิเคชันนั้นทันที หรือใช้ช่องค้นหาเพื่อกรองระบบงาน
+      </p>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="bg-[#F3F3F3] border-2 border-[#191A23] rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 mb-8 sm:mb-10 shadow-sm">
+      <div class="flex flex-col md:flex-row gap-3 sm:gap-4 items-stretch md:items-center justify-between">
+        
+        <!-- Search Input -->
+        <div class="relative flex-1">
+          <div class="absolute inset-y-0 left-0 pl-3.5 sm:pl-4 flex items-center pointer-events-none text-gray-500">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="ค้นหาชื่อระบบงาน, ฝ่าย, หรือคีย์เวิร์ด..." 
+            class="w-full pl-10 sm:pl-11 pr-9 sm:pr-10 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-[#191A23] bg-white text-xs sm:text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#B9FF66] transition-all">
+          <button 
+            type="button" 
+            id="clear-search-btn" 
+            class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-black">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Count Badge -->
+        <div class="flex items-center justify-between md:justify-end gap-2 sm:gap-3">
+          <span class="text-[11px] sm:text-xs text-gray-500 font-medium">แสดงผล:</span>
+          <span id="system-count-badge" class="bg-[#191A23] text-white text-[11px] sm:text-sm font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-black">
+            3 ระบบงาน
+          </span>
+        </div>
+
+      </div>
+
+      <!-- Category Filter Pills (Horizontal Scroll on Mobile) -->
+      <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-300 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 flex-nowrap" id="category-filters">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- System Cards Grid (Rendered Dynamically) -->
+    <div id="systems-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+      <!-- Cards rendered via js/app.js -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-12 sm:py-16 px-4 bg-[#F3F3F3] border-2 border-[#191A23] rounded-2xl sm:rounded-3xl my-6">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-white border-2 border-black rounded-2xl flex items-center justify-center text-2xl shadow-sm">
+        🔍
+      </div>
+      <h3 class="text-base sm:text-lg font-bold text-[#191A23] mb-1">ไม่พบระบบงานที่ค้นหา</h3>
+      <p class="text-gray-500 text-xs sm:text-sm max-w-sm mx-auto mb-4">
+        ลองตรวจสอบตัวสะกด หรือเลือกหมวดหมู่ "ทั้งหมด" เพื่อดูระบบงานทั้งหมดที่มี
+      </p>
+      <button 
+        type="button" 
+        onclick="document.getElementById('search-input').value=''; document.getElementById('search-input').dispatchEvent(new Event('input'));" 
+        class="btn-positivus-primary text-xs py-2 px-4 cursor-pointer">
+        ล้างคำค้นหา
+      </button>
+    </div>
+
+    <!-- Call to Action Card (Positivus Bottom Box) -->
+    <div id="about-section" class="mt-10 sm:mt-14 p-6 sm:p-10 md:p-12 rounded-2xl sm:rounded-[36px] bg-[#F3F3F3] border-2 border-[#191A23] shadow-[0px_4px_0px_#191A23] sm:shadow-[0px_6px_0px_#191A23] relative overflow-hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
+        
+        <div class="lg:col-span-8 space-y-3 sm:space-y-4">
+          <span class="positivus-tag text-sm sm:text-lg font-bold">
+            ศูนย์รวมระบบงานดิจิทัล
+          </span>
+          <h3 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#191A23]">
+            จัดทำโดย ฝ่ายสาธารณูปโภค ส่วนการโยธา สำนักช่าง
+          </h3>
+          <p class="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed">
+            ศูนย์กลางเข้าถึงระบบติดตามโครงการ ข้อมูลไฟฟ้าสาธารณะ และระบบเบิกจ่ายวัสดุ เทศบาลนครระยอง จังหวัดระยอง สะดวก รวดเร็ว ในจุดเดียว
+          </p>
+          <div class="flex flex-col sm:flex-row gap-2.5 sm:gap-3 pt-2">
+            <button 
+              type="button" 
+              onclick="document.getElementById('help-modal').classList.remove('hidden');" 
+              class="btn-positivus-primary text-xs sm:text-sm font-semibold justify-center cursor-pointer">
+              <span>ติดต่อ / แจ้งปัญหาการใช้งาน</span>
+            </button>
+            <a 
+              href="https://rayongcity.go.th" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="btn-positivus-outline text-xs sm:text-sm font-semibold justify-center">
+              <span>เว็บไซต์เทศบาลนครระยอง ↗</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="lg:col-span-4 flex justify-center">
+          <div class="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full bg-white border-2 border-black p-2.5 sm:p-3 shadow-[0px_3px_0px_#191A23] sm:shadow-[0px_4px_0px_#191A23] flex items-center justify-center">
+            <img src="assets/images/logo.png" alt="โลโก้สำนักช่าง" class="w-full h-full object-contain">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer (Positivus Dark Theme) -->
+  <footer class="bg-[#191A23] text-white border-t-2 border-black mt-12 sm:mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      
+      <!-- Top Row -->
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 pb-6 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-gray-400 p-0.5 flex-shrink-0">
+            <img src="assets/images/logo.png" alt="โลโก้สำนักช่าง" class="w-full h-full object-contain">
+          </div>
+          <div>
+            <div class="font-bold text-sm sm:text-base md:text-lg text-white">
+              สำนักช่าง เทศบาลนครระยอง
+            </div>
+            <div class="text-[11px] sm:text-xs text-gray-400">
+              ฝ่ายสาธารณูปโภค ส่วนการโยธา จังหวัดระยอง
+            </div>
+          </div>
+        </div>
+
+        <!-- System Quick Links -->
+        <div class="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-300 font-medium">
+          <a href="https://rayongcity-works.netlify.app/" target="_blank" rel="noopener noreferrer" class="hover:text-[#B9FF66] transition-colors">งานติดตามโครงการ ↗</a>
+          <a href="https://rayongcitystreetlight.netlify.app/" target="_blank" rel="noopener noreferrer" class="hover:text-[#B9FF66] transition-colors">ไฟฟ้าสาธารณะ ↗</a>
+          <a href="https://yotharayong-stock.vercel.app/" target="_blank" rel="noopener noreferrer" class="hover:text-[#B9FF66] transition-colors">เบิกจ่ายวัสดุ ↗</a>
+          <a href="https://gisportal.drr.go.th/portal/apps/dashboards/fc587b24eb1d4f5e811a08418ccf1d0f" target="_blank" rel="noopener noreferrer" class="hover:text-[#B9FF66] transition-colors">ทางหลวงท้องถิ่น (DRR) ↗</a>
+          <a href="https://rayongcity.go.th" target="_blank" rel="noopener noreferrer" class="hover:text-[#B9FF66] transition-colors">เทศบาลนครระยอง ↗</a>
+        </div>
+      </div>
+
+      <!-- Bottom Copyright -->
+      <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] sm:text-xs text-gray-500 text-center sm:text-left">
+        <p>© 2569 เทศบาลนครระยอง. สงวนลิขสิทธิ์ทุกประการ.</p>
+        <p class="flex items-center gap-1.5">
+          <span>Rayong Smart Municipality Portal Hub</span>
+        </p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Modal: ติดต่อ / แจ้งปัญหา -->
+  <div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop-blur">
+    <div class="bg-white border-2 border-[#191A23] rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-lg w-full shadow-[0px_6px_0px_#191A23] sm:shadow-[0px_8px_0px_#191A23] relative animate-float max-h-[92vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between mb-4 sm:mb-5 pb-3 border-b border-gray-200">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-[#B9FF66] border border-black"></span>
+          <h3 class="text-base sm:text-xl font-bold text-[#191A23]">ติดต่อ / แจ้งปัญหาการใช้งาน</h3>
+        </div>
+        <button id="close-help-modal" class="text-gray-400 hover:text-black p-1 cursor-pointer">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs sm:text-sm text-gray-700">
+        <div class="p-3.5 sm:p-4 bg-[#F3F3F3] rounded-xl sm:rounded-2xl border border-gray-300">
+          <div class="font-bold text-black mb-1">🏢 ฝ่ายสาธารณูปโภค ส่วนการโยธา สำนักช่าง</div>
+          <p class="text-xs text-gray-600">เทศบาลนครระยอง จังหวัดระยอง</p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB]">
+            <span class="text-xl flex-shrink-0">🌐</span>
+            <div class="min-w-0">
+              <div class="font-bold text-xs text-gray-500">เว็บไซต์เทศบาล</div>
+              <a href="https://rayongcity.go.th" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold hover:underline truncate block text-sm">https://rayongcity.go.th</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 pt-3 sm:pt-4 border-t border-gray-200 flex justify-end">
+        <button 
+          type="button" 
+          onclick="document.getElementById('help-modal').classList.add('hidden');" 
+          class="btn-positivus-primary text-xs py-2 px-4 sm:py-2.5 sm:px-5 cursor-pointer">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/illustrations.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Render Hero Work Portal Hub Illustration on Load
+    document.addEventListener('DOMContentLoaded', () => {
+      const heroContainer = document.getElementById('hero-illustration-container');
+      if (heroContainer && illustrations) {
+        heroContainer.innerHTML = illustrations.heroPortalHub ? illustrations.heroPortalHub() : illustrations.heroMegaphone();
       }
     });
   </script>

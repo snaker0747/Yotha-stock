@@ -1,455 +1,512 @@
-// Initial Mock Data
-const defaultProjects = [
-    { id: 1, contractNo: "1/2569", name: "โครงการ A", procurement: "เฉพาะเจาะจง", engineer: "พง, บุญดี, ศรีชัย", committee: "ศรีจัน, แสง, พัชรา", budget: "80,000", budgetRaw: 80000, status: "จัดทำแผน", progress: 30, notes: "" },
-    { id: 2, contractNo: "2/2569", name: "โครงการ B", procurement: "E-Bidding", engineer: "คุณา, ศรีชัย", committee: "ศรีจัน, ภัทรา, พัชนะ", budget: "9,860,000", budgetRaw: 9860000, status: "จัดทำเอกสาร E-bidding", progress: 98, notes: "รอเอกสารเพิ่มเติม" },
-    { id: 3, contractNo: "3/2569", name: "โครงการ C", procurement: "E-Bidding", engineer: "ศรีชัย, อุดม", committee: "เลิศม, พัชรา, สมชัย", budget: "8,930,000", budgetRaw: 8930000, status: "ประกาศผู้ชนะ", progress: 26, notes: "" },
-    { id: 4, contractNo: "4/2569", name: "โครงการ D", procurement: "เฉพาะเจาะจง", engineer: "พง, วันชนะ", committee: "ภัทรา, แสง, สมชัย, อัครชัย", budget: "450,000", budgetRaw: 450000, status: "ทำ/ลงนามสัญญา", progress: 40, notes: "" },
-    { id: 5, contractNo: "5/2569", name: "โครงการ E", procurement: "E-Bidding", engineer: "สมหมาย, ศรีชัย, สมดี", committee: "เลิศม, พัชรา, อัครชัย", budget: "9,030,000", budgetRaw: 9030000, status: "จัดทำรายงานขอซื้อ/จ้าง", progress: 30, notes: "" },
-    { id: 6, contractNo: "6/2569", name: "โครงการ F", procurement: "E-Bidding", engineer: "คุณา, พง", committee: "เลิศม, พัชรา, สมชัย", budget: "54,640,000", budgetRaw: 54640000, status: "ดำเนินงานโครงการ", progress: 78, notes: "" },
-    { id: 7, contractNo: "7/2569", name: "โครงการ G", procurement: "เฉพาะเจาะจง", engineer: "เลอพง, บุญดี", committee: "เลิศม, ศรีจัน, รัตนพงศ์", budget: "200,000", budgetRaw: 200000, status: "ดำเนินงานโครงการ", progress: 50, notes: "พบปัญหาหน้างาน แจ้งปรับแก้" },
-    { id: 8, contractNo: "8/2569", name: "โครงการ H", procurement: "E-Bidding", engineer: "วันชัย, สมดี, สมหมาย", committee: "พัชรา, สมชัย, สมหมาย", budget: "7,000,000", budgetRaw: 7000000, status: "ดำเนินงานโครงการ", progress: 68, notes: "" },
-    { id: 9, contractNo: "9/2569", name: "โครงการ I", procurement: "E-Bidding", engineer: "อุดม, สมดี", committee: "ศรีจัน, อัครชัย, พัชนะ", budget: "1,200,000", budgetRaw: 1200000, status: "ทำ/ลงนามสัญญา", progress: 46, notes: "" },
-    { id: 10, contractNo: "10/2569", name: "โครงการ J", procurement: "E-Bidding", engineer: "วันชนะ, เลอพง", committee: "รัตนพงศ์, ภัทรา, อัครชัย", budget: "3,940,000", budgetRaw: 3940000, status: "ดำเนินงานโครงการ", progress: 80, notes: "" },
-    { id: 11, contractNo: "11/2569", name: "โครงการ K", procurement: "E-Bidding", engineer: "ศรีพง, คุณา", committee: "รัตนพงศ์, พัชรา, สมปอง", budget: "37,800,000", budgetRaw: 37800000, status: "ประกาศผู้ชนะ", progress: 35, notes: "" }
-];
+/**
+ * Application Logic & PIN Security Authentication - Mobile & Tablet Optimized
+ * ศูนย์รวมระบบงาน ฝ่ายสาธารณูปโภค ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง
+ */
 
-// App State
-let projects = JSON.parse(localStorage.getItem('pw_projects')) || defaultProjects;
-let currentUser = { role: null, name: null };
-let currentFilters = { search: '', procurement: '', status: '' };
-let statusChart = null;
-let budgetChart = null;
+// Secret PIN Code
+const CORRECT_PIN = "888888";
+const AUTH_STORAGE_KEY = "rayong_portal_auth_session";
 
-// DOM Elements
-const loginView = document.getElementById('login-view');
-const dashboardView = document.getElementById('dashboard-view');
-const roleSelect = document.getElementById('role-select');
-const engineerSelectGroup = document.getElementById('engineer-select-group');
-const engineerNameSelect = document.getElementById('engineer-name');
-const loginBtn = document.getElementById('login-btn');
-const logoutBtn = document.getElementById('logout-btn');
-const userInfo = document.getElementById('user-info');
-const tbody = document.getElementById('projects-tbody');
-const summaryCards = document.getElementById('summary-cards');
-const statusTabs = document.getElementById('status-tabs');
-const searchInput = document.getElementById('search-input');
-const procurementFilter = document.getElementById('procurement-filter');
-const statusFilter = document.getElementById('status-filter');
-const actionCol = document.getElementById('action-col');
+document.addEventListener('DOMContentLoaded', () => {
+  // State management
+  let activeCategory = 'all';
+  let searchQuery = '';
+  let pinnedIds = JSON.parse(localStorage.getItem('rayong_pinned_systems') || '[]');
+  let currentPin = '';
+  let isAuthenticating = false;
 
-// Modal Elements
-const editModal = document.getElementById('edit-modal');
-const closeModalBtn = document.getElementById('close-modal');
-const cancelEditBtn = document.getElementById('cancel-edit');
-const editForm = document.getElementById('edit-form');
+  // DOM Elements
+  const searchInput = document.getElementById('search-input');
+  const clearSearchBtn = document.getElementById('clear-search-btn');
+  const categoryFilters = document.getElementById('category-filters');
+  const systemsGrid = document.getElementById('systems-grid');
+  const systemCountBadge = document.getElementById('system-count-badge');
+  const emptyState = document.getElementById('empty-state');
 
-// Initialize
-function init() {
-    // Extract unique engineers for dropdown
-    const allEngineers = new Set();
-    projects.forEach(p => {
-        p.engineer.split(',').forEach(e => allEngineers.add(e.trim()));
-    });
-    const sortedEngineers = Array.from(allEngineers).sort();
-    
-    engineerNameSelect.innerHTML = '';
-    sortedEngineers.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        engineerNameSelect.appendChild(option);
-    });
+  // PIN Login Elements
+  const pinOverlay = document.getElementById('pin-overlay');
+  const pinBoxesContainer = document.getElementById('pin-boxes');
+  const pinBoxes = document.querySelectorAll('.pin-digit-box');
+  const pinErrorMessage = document.getElementById('pin-error-message');
+  const keypadButtons = document.querySelectorAll('.keypad-btn');
+  const logoutBtn = document.getElementById('logout-btn');
 
-    // Check if already logged in
-    const savedUser = localStorage.getItem('pw_user');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showDashboard();
-    }
-}
+  // Initialize
+  initApp();
 
-// Event Listeners
-roleSelect.addEventListener('change', (e) => {
-    if (e.target.value === 'engineer') {
-        engineerSelectGroup.style.display = 'block';
+  function initApp() {
+    checkAuthStatus();
+    renderCategories();
+    renderSystems();
+    setupEventListeners();
+    setupPinSecurity();
+    updateLiveTime();
+  }
+
+  // =========================================================================
+  // PIN Code Security Logic (PIN: 888888)
+  // =========================================================================
+  function checkAuthStatus() {
+    const isAuthenticated = sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true';
+    if (isAuthenticated) {
+      hidePinOverlay(false);
     } else {
-        engineerSelectGroup.style.display = 'none';
+      showPinOverlay();
     }
-});
+  }
 
-loginBtn.addEventListener('click', () => {
-    const role = roleSelect.value;
-    const name = role === 'engineer' ? engineerNameSelect.value : 'ผู้บริหาร';
-    
-    currentUser = { role, name };
-    localStorage.setItem('pw_user', JSON.stringify(currentUser));
-    showDashboard();
-});
+  function showPinOverlay() {
+    if (!pinOverlay) return;
+    currentPin = '';
+    updatePinDisplay();
+    pinOverlay.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    if (pinErrorMessage) pinErrorMessage.classList.add('hidden');
+  }
 
-logoutBtn.addEventListener('click', () => {
-    localStorage.removeItem('pw_user');
-    currentUser = { role: null, name: null };
-    loginView.classList.add('active');
-    dashboardView.classList.remove('active');
-});
-
-// Search & Filter Events
-searchInput.addEventListener('input', (e) => {
-    currentFilters.search = e.target.value.toLowerCase();
-    renderTable();
-});
-
-procurementFilter.addEventListener('change', (e) => {
-    currentFilters.procurement = e.target.value;
-    renderTable();
-});
-
-statusFilter.addEventListener('change', (e) => {
-    currentFilters.status = e.target.value;
-    renderTable();
-    updateTabsUI();
-});
-
-// Modal Events
-closeModalBtn.addEventListener('click', closeModal);
-cancelEditBtn.addEventListener('click', closeModal);
-editForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    saveProjectEdit();
-});
-
-function showDashboard() {
-    loginView.classList.remove('active');
-    dashboardView.classList.add('active');
-    
-    if (currentUser.role === 'executive') {
-        userInfo.textContent = 'ผู้บริหาร (Executive)';
-        actionCol.style.display = 'none';
-        document.getElementById('charts-section').style.display = 'grid';
+  function hidePinOverlay(animated = true) {
+    if (!pinOverlay) return;
+    if (animated) {
+      pinOverlay.classList.add('animate-unlock');
+      setTimeout(() => {
+        pinOverlay.classList.add('hidden');
+        pinOverlay.classList.remove('animate-unlock');
+        document.body.classList.remove('overflow-hidden');
+      }, 350);
     } else {
-        userInfo.textContent = `ช่าง: ${currentUser.name}`;
-        actionCol.style.display = 'table-cell';
-        document.getElementById('charts-section').style.display = 'none';
+      pinOverlay.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
     }
-    
-    renderDashboard();
-}
+  }
 
-function renderDashboard() {
-    renderSummaryCards();
-    renderStatusTabs();
-    renderTable();
-    if (currentUser.role === 'executive') {
-        renderCharts();
+  function setupPinSecurity() {
+    // Keypad Click Event
+    keypadButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const digit = btn.getAttribute('data-digit');
+        const action = btn.getAttribute('data-action');
+
+        if (action === 'delete') {
+          handlePinDelete();
+        } else if (action === 'clear') {
+          handlePinClear();
+        } else if (digit !== null) {
+          handlePinInput(digit);
+        }
+      });
+    });
+
+    // Hardware Keyboard Input
+    window.addEventListener('keydown', (e) => {
+      // Only process when PIN overlay is visible
+      if (pinOverlay && !pinOverlay.classList.contains('hidden')) {
+        if (e.key >= '0' && e.key <= '9') {
+          e.preventDefault();
+          handlePinInput(e.key);
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          handlePinDelete();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          handlePinClear();
+        }
+      }
+    });
+
+    // Logout / Lock Button
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        showToast('🔒 ล็อกระบบเรียบร้อยแล้ว');
+        showPinOverlay();
+      });
     }
-}
+  }
 
-function renderSummaryCards() {
-    const totalBudget = projects.reduce((sum, p) => sum + p.budgetRaw, 0) / 1000000;
-    const operating = projects.filter(p => p.status === 'ดำเนินงานโครงการ').length;
-    const notStarted = projects.filter(p => ['จัดทำแผน', 'จัดทำรายงานขอซื้อ/จ้าง', 'จัดทำเอกสาร E-bidding'].includes(p.status)).length;
-    const hasNotes = projects.filter(p => p.notes && p.notes.trim() !== '').length;
-    const specificCount = projects.filter(p => p.procurement === 'เฉพาะเจาะจง').length;
+  function handlePinInput(digit) {
+    if (isAuthenticating || currentPin.length >= 6) return;
+    currentPin += digit;
+    updatePinDisplay();
 
-    summaryCards.innerHTML = `
-        <div class="stat-card">
-            <div class="stat-title">โครงการทั้งหมด</div>
-            <div class="stat-value text-blue">${projects.length} <span>สัญญา</span></div>
-        </div>
-        <div class="stat-card highlight">
-            <div class="stat-title">งบประมาณรวม</div>
-            <div class="stat-value">${totalBudget.toFixed(2)} <span>ล้านบาท</span></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">ดำเนินงานแล้ว</div>
-            <div class="stat-value text-success">${operating} <span>โครงการ</span></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">ยังไม่เริ่มดำเนินงาน</div>
-            <div class="stat-value">${notStarted} <span>โครงการ</span></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">มีหมายเหตุแจ้งเตือน</div>
-            <div class="stat-value ${hasNotes > 0 ? 'text-danger' : ''}">${hasNotes} <span>โครงการ</span></div>
-        </div>
-    `;
-}
+    if (currentPin.length === 6) {
+      verifyPin();
+    }
+  }
 
-function renderStatusTabs() {
-    const statuses = [
-        "จัดทำแผน", 
-        "จัดทำรายงานขอซื้อ/จ้าง", 
-        "จัดทำเอกสาร E-bidding", 
-        "ประกาศผู้ชนะ", 
-        "ทำ/ลงนามสัญญา", 
-        "ดำเนินงานโครงการ", 
-        "ตรวจรับงาน"
-    ];
-    
-    let tabsHtml = `<button class="tab-btn ${currentFilters.status === '' ? 'active' : ''}" data-status="">
-        ทั้งหมด <span class="badge">${projects.length}</span>
-    </button>`;
-    
-    statuses.forEach(status => {
-        const count = projects.filter(p => p.status === status).length;
-        tabsHtml += `<button class="tab-btn ${currentFilters.status === status ? 'active' : ''}" data-status="${status}">
-            ${status} <span class="badge">${count}</span>
-        </button>`;
+  function handlePinDelete() {
+    if (isAuthenticating || currentPin.length === 0) return;
+    currentPin = currentPin.slice(0, -1);
+    updatePinDisplay();
+    if (pinErrorMessage) pinErrorMessage.classList.add('hidden');
+  }
+
+  function handlePinClear() {
+    if (isAuthenticating) return;
+    currentPin = '';
+    updatePinDisplay();
+    if (pinErrorMessage) pinErrorMessage.classList.add('hidden');
+  }
+
+  function updatePinDisplay() {
+    pinBoxes.forEach((box, index) => {
+      if (index < currentPin.length) {
+        box.classList.add('filled');
+        box.innerHTML = `<span>●</span>`;
+      } else {
+        box.classList.remove('filled');
+        box.innerHTML = '';
+      }
+
+      if (index === currentPin.length) {
+        box.classList.add('active-focus');
+      } else {
+        box.classList.remove('active-focus');
+      }
     });
-    
-    statusTabs.innerHTML = tabsHtml;
-    
-    // Add click events
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            currentFilters.status = e.currentTarget.dataset.status;
-            statusFilter.value = currentFilters.status;
-            renderTable();
-            updateTabsUI();
-        });
-    });
-}
+  }
 
-function updateTabsUI() {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.dataset.status === currentFilters.status) {
-            btn.classList.add('active');
+  function verifyPin() {
+    isAuthenticating = true;
+
+    if (currentPin === CORRECT_PIN) {
+      // Success!
+      sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+      if (pinErrorMessage) pinErrorMessage.classList.add('hidden');
+      
+      // Visual feedback
+      pinBoxes.forEach(box => {
+        box.classList.add('bg-[#B9FF66]');
+      });
+
+      setTimeout(() => {
+        hidePinOverlay(true);
+        showToast('✅ ปลดล็อกระบบสำเร็จ ยินดีต้อนรับ');
+        isAuthenticating = false;
+      }, 250);
+
+    } else {
+      // Failed PIN
+      setTimeout(() => {
+        if (pinErrorMessage) {
+          pinErrorMessage.classList.remove('hidden');
+        }
+        if (pinBoxesContainer) {
+          pinBoxesContainer.classList.add('animate-shake');
+          setTimeout(() => {
+            pinBoxesContainer.classList.remove('animate-shake');
+          }, 500);
+        }
+        currentPin = '';
+        updatePinDisplay();
+        isAuthenticating = false;
+      }, 200);
+    }
+  }
+
+  // =========================================================================
+  // Standard App Event Listeners & Search
+  // =========================================================================
+  function setupEventListeners() {
+    // Search input
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim().toLowerCase();
+        if (searchQuery.length > 0) {
+          clearSearchBtn.classList.remove('hidden');
         } else {
-            btn.classList.remove('active');
+          clearSearchBtn.classList.add('hidden');
         }
-    });
-}
-
-function getStatusColor(status) {
-    if (status.includes("แผน")) return "status-plan";
-    if (status.includes("รายงาน")) return "status-report";
-    if (status.includes("E-bidding")) return "status-ebidding";
-    if (status.includes("ผู้ชนะ")) return "status-winner";
-    if (status.includes("สัญญา")) return "status-contract";
-    if (status.includes("ดำเนินงาน")) return "status-operate";
-    if (status.includes("ตรวจรับ")) return "status-inspect";
-    return "";
-}
-
-function getProgressColor(progress) {
-    if (progress < 30) return "var(--accent-danger)";
-    if (progress < 70) return "var(--accent-warning)";
-    if (progress < 100) return "var(--accent-primary)";
-    return "var(--accent-success)";
-}
-
-function formatBudget(amount) {
-    if (amount >= 1000000) {
-        return (amount / 1000000).toFixed(2) + " ล.";
-    } else if (amount >= 1000) {
-        return (amount / 1000).toFixed(0) + " พ.";
+        renderSystems();
+      });
     }
-    return amount;
-}
 
-function renderTable() {
-    let filtered = projects.filter(p => {
-        const matchSearch = p.name.toLowerCase().includes(currentFilters.search) || 
-                            p.contractNo.toLowerCase().includes(currentFilters.search) ||
-                            p.engineer.toLowerCase().includes(currentFilters.search);
-        const matchProcurement = currentFilters.procurement === '' || p.procurement === currentFilters.procurement;
-        const matchStatus = currentFilters.status === '' || p.status === currentFilters.status;
-        
-        return matchSearch && matchProcurement && matchStatus;
+    // Clear search
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchQuery = '';
+        clearSearchBtn.classList.add('hidden');
+        searchInput.focus();
+        renderSystems();
+      });
+    }
+
+    // Help Modal
+    const helpModalBtn = document.getElementById('help-modal-btn');
+    const helpModal = document.getElementById('help-modal');
+    const closeHelpModal = document.getElementById('close-help-modal');
+
+    if (helpModalBtn && helpModal) {
+      helpModalBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+      if (closeHelpModal) closeHelpModal.addEventListener('click', () => helpModal.classList.add('hidden'));
+      helpModal.addEventListener('click', (e) => {
+        if (e.target === helpModal) helpModal.classList.add('hidden');
+      });
+    }
+
+    // Keyboard shortcut (Escape to close modal, / to search)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (helpModal) helpModal.classList.add('hidden');
+      }
+      if (e.key === '/' && document.activeElement !== searchInput && (!pinOverlay || pinOverlay.classList.contains('hidden'))) {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+  }
+
+  // Render Category Filter Tabs
+  function renderCategories() {
+    if (!categoryFilters) return;
+    
+    categoryFilters.innerHTML = categories.map(cat => `
+      <button 
+        type="button" 
+        class="filter-tab ${cat.id === activeCategory ? 'active' : ''}" 
+        data-category="${cat.id}">
+        ${cat.name}
+      </button>
+    `).join('');
+
+    // Attach click events
+    categoryFilters.querySelectorAll('.filter-tab').forEach(button => {
+      button.addEventListener('click', () => {
+        categoryFilters.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        activeCategory = button.getAttribute('data-category');
+        renderSystems();
+      });
+    });
+  }
+
+  // Toggle Pinned / Favorite System
+  window.togglePin = function(id, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (pinnedIds.includes(id)) {
+      pinnedIds = pinnedIds.filter(item => item !== id);
+      showToast('ยกเลิกการปักหมุดแล้ว');
+    } else {
+      pinnedIds.push(id);
+      showToast('⭐ ปักหมุดระบบงานโปรดไว้บนสุดแล้ว');
+    }
+    localStorage.setItem('rayong_pinned_systems', JSON.stringify(pinnedIds));
+    renderSystems();
+  };
+
+  // Copy Link Helper
+  window.copySystemLink = function(url, title, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    navigator.clipboard.writeText(url).then(() => {
+      showToast(`คัดลอกลิงก์ "${title}" แล้ว`);
+    });
+  };
+
+  // Open System Link Handler
+  window.openSystem = function(url, event) {
+    if (event.target.closest('button') || event.target.closest('a')) {
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Render System Cards
+  function renderSystems() {
+    if (!systemsGrid) return;
+
+    // Filter systems
+    let filtered = systemsData.filter(system => {
+      const matchesCategory = (activeCategory === 'all') || (system.category === activeCategory);
+      const matchesSearch = (
+        searchQuery === '' ||
+        system.title.toLowerCase().includes(searchQuery) ||
+        system.description.toLowerCase().includes(searchQuery) ||
+        system.category.toLowerCase().includes(searchQuery) ||
+        system.department.toLowerCase().includes(searchQuery) ||
+        (system.tag && system.tag.toLowerCase().includes(searchQuery))
+      );
+
+      return matchesCategory && matchesSearch;
     });
 
-    tbody.innerHTML = '';
-    
+    // Sort: Pinned first
+    filtered.sort((a, b) => {
+      const aPinned = pinnedIds.includes(a.id);
+      const bPinned = pinnedIds.includes(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+
+    // Update count badge
+    if (systemCountBadge) {
+      systemCountBadge.textContent = `${filtered.length} ระบบงาน`;
+    }
+
+    // Handle Empty State
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${currentUser.role === 'engineer' ? 9 : 8}" style="text-align:center; padding: 30px; color: var(--text-muted);">ไม่พบข้อมูลโครงการที่ค้นหา</td></tr>`;
-        return;
+      systemsGrid.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+      return;
+    } else {
+      if (emptyState) emptyState.classList.add('hidden');
     }
 
-    filtered.forEach(p => {
-        // Can edit if role is engineer AND engineer name matches (substring)
-        const canEdit = currentUser.role === 'engineer' && p.engineer.includes(currentUser.name);
-        
-        const tr = document.createElement('tr');
-        
-        // Render Row
-        let rowHtml = `
-            <td class="project-cell">
-                <div class="project-name">${p.name}</div>
-                <div class="contract-no">${p.contractNo}</div>
-            </td>
-            <td><span class="badge-procurement">${p.procurement}</span></td>
-            <td>${p.engineer.replace(/,/g, ', ')}</td>
-            <td>${p.committee.replace(/,/g, ', ')}</td>
-            <td>${formatBudget(p.budgetRaw)}</td>
-            <td><span class="badge-status ${getStatusColor(p.status)}">${p.status}</span></td>
-            <td>
-                <div class="progress-cell">
-                    <span class="progress-text">${p.progress}%</span>
-                    <div class="progress-track">
-                        <div class="progress-fill" style="width: ${p.progress}%; background-color: ${getProgressColor(p.progress)};"></div>
-                    </div>
-                </div>
-            </td>
-            <td class="notes-cell">${p.notes ? p.notes : '<span style="color:var(--text-muted)">-</span>'}</td>
-        `;
+    // Render HTML Cards
+    systemsGrid.innerHTML = filtered.map(system => {
+      const isPinned = pinnedIds.includes(system.id);
+      const illustrationSvg = illustrations[system.illustrationType] ? 
+        illustrations[system.illustrationType](system.cardTheme) : 
+        illustrations.project(system.cardTheme);
 
-        if (currentUser.role === 'engineer') {
-            if (canEdit) {
-                rowHtml += `<td>
-                    <button class="btn btn-outline" onclick="openEditModal(${p.id})">
-                        <i class="ri-edit-line"></i> อัปเดต
-                    </button>
-                </td>`;
-            } else {
-                rowHtml += `<td>
-                    <span style="color: var(--text-muted); font-size: 0.85rem;">ไม่มีสิทธิ์</span>
-                </td>`;
-            }
-        }
+      // Format badges
+      const badgeHtml = Array.isArray(system.badgeTitle) ? 
+        system.badgeTitle.map(text => `<span class="badge-title px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-base sm:text-lg md:text-xl font-bold tracking-tight inline-block mb-1 sm:mb-1.5 shadow-xs">${text}</span>`).join(' ') :
+        `<span class="badge-title px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-base sm:text-lg md:text-xl font-bold tracking-tight inline-block shadow-xs">${system.title}</span>`;
 
-        tr.innerHTML = rowHtml;
-        tbody.appendChild(tr);
-    });
-}
+      return `
+        <div 
+          onclick="openSystem('${system.url}', event)" 
+          class="group relative flex flex-col justify-between p-5 sm:p-7 md:p-8 lg:p-9 neo-box card-theme-${system.cardTheme} cursor-pointer transition-all duration-300">
+          
+          <!-- Top Utility Bar (Pin & Tag) -->
+          <div class="flex items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-5 z-10">
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span class="text-[11px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md ${system.cardTheme === 'dark' ? 'bg-[#2A2B36] text-gray-200 border border-gray-700' : 'bg-white/95 text-gray-800 border border-black/10 shadow-xs'}">
+                ${system.category}
+              </span>
+              <span class="inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs font-medium ${system.cardTheme === 'dark' ? 'text-emerald-400' : 'text-emerald-800 font-semibold'}">
+                <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                ออนไลน์
+              </span>
+            </div>
 
-// Modal Functions
-window.openEditModal = function(id) {
-    const project = projects.find(p => p.id === id);
-    if (!project) return;
-    
-    document.getElementById('edit-id').value = project.id;
-    document.getElementById('edit-contractNo').value = project.contractNo;
-    document.getElementById('edit-name').value = project.name;
-    document.getElementById('edit-procurement').value = project.procurement;
-    document.getElementById('edit-budget').value = project.budgetRaw;
-    document.getElementById('edit-engineer').value = project.engineer;
-    document.getElementById('edit-committee').value = project.committee;
-    document.getElementById('edit-status').value = project.status;
-    document.getElementById('edit-progress').value = project.progress;
-    document.getElementById('edit-notes').value = project.notes;
-    
-    editModal.classList.add('active');
-}
+            <!-- Quick Action Icons -->
+            <div class="flex items-center gap-1">
+              <button 
+                type="button" 
+                onclick="copySystemLink('${system.url}', '${system.title}', event)"
+                title="คัดลอกลิงก์"
+                class="p-1.5 rounded-lg text-xs transition-colors ${system.cardTheme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-white/10 active:bg-white/20' : 'text-gray-500 hover:text-black hover:bg-black/10 active:bg-black/20'}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+              </button>
 
-function closeModal() {
-    editModal.classList.remove('active');
-}
+              <button 
+                type="button" 
+                onclick="togglePin('${system.id}', event)" 
+                title="${isPinned ? 'ยกเลิกการปักหมุด' : 'ปักหมุดระบบงานนี้'}"
+                class="p-1.5 rounded-lg text-base leading-none transition-transform active:scale-75 ${isPinned ? 'text-amber-400 font-bold scale-110' : (system.cardTheme === 'dark' ? 'text-gray-400 hover:text-amber-300' : 'text-gray-400 hover:text-amber-500')}">
+                ${isPinned ? '★' : '☆'}
+              </button>
+            </div>
+          </div>
 
-function saveProjectEdit() {
-    const id = parseInt(document.getElementById('edit-id').value);
-    
-    const index = projects.findIndex(p => p.id === id);
-    if (index !== -1) {
-        projects[index].contractNo = document.getElementById('edit-contractNo').value;
-        projects[index].name = document.getElementById('edit-name').value;
-        projects[index].procurement = document.getElementById('edit-procurement').value;
-        projects[index].budgetRaw = parseInt(document.getElementById('edit-budget').value) || 0;
-        projects[index].budget = formatBudget(projects[index].budgetRaw);
-        projects[index].engineer = document.getElementById('edit-engineer').value;
-        projects[index].committee = document.getElementById('edit-committee').value;
-        projects[index].status = document.getElementById('edit-status').value;
-        projects[index].progress = parseInt(document.getElementById('edit-progress').value) || 0;
-        projects[index].notes = document.getElementById('edit-notes').value;
-        
-        // Save to local storage
-        localStorage.setItem('pw_projects', JSON.stringify(projects));
-        
-        // Re-render
-        renderDashboard();
-        closeModal();
+          <!-- Main Card Content Grid (Text Left + Illustration Right) -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-5 items-center flex-1 my-1 sm:my-2">
+            
+            <!-- Left Info Column -->
+            <div class="sm:col-span-7 flex flex-col justify-center order-2 sm:order-1">
+              <div class="mb-2 sm:mb-3">
+                ${badgeHtml}
+              </div>
+              <p class="text-xs sm:text-sm md:text-base leading-relaxed line-clamp-3 mb-3 sm:mb-4 ${system.cardTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}">
+                ${system.description}
+              </p>
+              <div class="text-[11px] sm:text-xs ${system.cardTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-medium">
+                🏛️ ${system.department}
+              </div>
+            </div>
+
+            <!-- Right Illustration Column -->
+            <div class="sm:col-span-5 flex items-center justify-center p-1 sm:p-2 order-1 sm:order-2 max-w-[150px] sm:max-w-[180px] md:max-w-[210px] mx-auto w-full">
+              ${illustrationSvg}
+            </div>
+
+          </div>
+
+          <!-- Bottom Action Bar -->
+          <div class="pt-4 sm:pt-5 mt-2 border-t ${system.cardTheme === 'dark' ? 'border-gray-800' : 'border-black/10'} flex items-center justify-between">
+            <a 
+              href="${system.url}" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2.5 sm:gap-3 group-hover:gap-3.5 transition-all duration-200 py-1">
+              
+              <!-- Circular Action Button with 45-degree arrow -->
+              <span class="btn-circle-action w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center border border-black shadow-xs transform group-hover:rotate-45 group-hover:scale-105 transition-all duration-300 flex-shrink-0">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H9M17 7V15"></path>
+                </svg>
+              </span>
+
+              <span class="btn-action-text text-sm sm:text-base md:text-lg font-bold tracking-tight">
+                เข้าใช้งานระบบ
+              </span>
+            </a>
+
+            <span class="text-[11px] sm:text-xs opacity-60 hidden sm:inline-block ${system.cardTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}">
+              เปิดแท็บใหม่ ↗
+            </span>
+          </div>
+
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Toast Notification
+  function showToast(message) {
+    let toast = document.getElementById('toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.className = 'fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 bg-[#191A23] text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border-2 border-[#B9FF66] shadow-2xl flex items-center gap-2.5 sm:gap-3 transform transition-all duration-300 translate-y-20 opacity-0 max-w-[90vw]';
+      document.body.appendChild(toast);
     }
-}
-
-// Chart Rendering
-function renderCharts() {
-    if (!window.Chart) return;
     
-    // 1. Status Bar Chart
-    const statusCounts = {};
-    const statuses = ["จัดทำแผน", "จัดทำรายงานขอซื้อ/จ้าง", "จัดทำเอกสาร E-bidding", "ประกาศผู้ชนะ", "ทำ/ลงนามสัญญา", "ดำเนินงานโครงการ", "ตรวจรับงาน"];
-    statuses.forEach(s => statusCounts[s] = 0);
-    projects.forEach(p => {
-        if (statusCounts[p.status] !== undefined) {
-            statusCounts[p.status]++;
-        }
-    });
+    toast.innerHTML = `
+      <span class="w-2 h-2 rounded-full bg-[#B9FF66] flex-shrink-0"></span>
+      <span class="text-xs sm:text-sm font-medium leading-tight">${message}</span>
+    `;
 
-    const ctxStatus = document.getElementById('statusBarChart').getContext('2d');
-    if (statusChart) statusChart.destroy();
-    statusChart = new Chart(ctxStatus, {
-        type: 'bar',
-        data: {
-            labels: statuses,
-            datasets: [{
-                label: 'จำนวนโครงการ',
-                data: statuses.map(s => statusCounts[s]),
-                backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                borderColor: 'rgba(59, 130, 246, 1)',
-                borderWidth: 1,
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: { 
-                    beginAtZero: true, 
-                    ticks: { stepSize: 1, color: '#A0A0AB' },
-                    grid: { color: '#2D2D35' }
-                },
-                x: {
-                    ticks: { color: '#A0A0AB', font: { family: 'Kanit' } },
-                    grid: { display: false }
-                }
-            }
-        }
-    });
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
 
-    // 2. Budget Doughnut Chart
-    let eBiddingBudget = 0;
-    let specificBudget = 0;
-    projects.forEach(p => {
-        if (p.procurement === 'E-Bidding') eBiddingBudget += p.budgetRaw;
-        if (p.procurement === 'เฉพาะเจาะจง') specificBudget += p.budgetRaw;
-    });
+    setTimeout(() => {
+      toast.classList.remove('translate-y-0', 'opacity-100');
+      toast.classList.add('translate-y-20', 'opacity-0');
+    }, 2800);
+  }
 
-    const ctxBudget = document.getElementById('budgetDoughnutChart').getContext('2d');
-    if (budgetChart) budgetChart.destroy();
-    budgetChart = new Chart(ctxBudget, {
-        type: 'doughnut',
-        data: {
-            labels: ['E-Bidding', 'เฉพาะเจาะจง'],
-            datasets: [{
-                data: [eBiddingBudget, specificBudget],
-                backgroundColor: ['rgba(139, 92, 246, 0.8)', 'rgba(16, 185, 129, 0.8)'],
-                borderColor: '#1C1C21',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { color: '#A0A0AB', font: { family: 'Kanit' } }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let value = context.raw;
-                            return ' ' + formatBudget(value) + ' บาท';
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
+  // Live Time in Footer/Header
+  function updateLiveTime() {
+    const timeEl = document.getElementById('live-time');
+    if (!timeEl) return;
 
-// Start app
-init();
+    const update = () => {
+      const now = new Date();
+      const options = { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      };
+      timeEl.textContent = now.toLocaleDateString('th-TH', options);
+    };
+
+    update();
+    setInterval(update, 1000);
+  }
+});
