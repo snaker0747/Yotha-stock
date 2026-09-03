@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบการเบิกจ่ายวัสดุ - ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</title>
+  <link rel="icon" type="image/png" href="in-stock.png">
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f2f2f7; }
+    iframe { width: 100%; height: 100%; border: none; display: block; }
+  </style>
+</head>
+<body>
+  <iframe id="app-frame" src="https://script.google.com/macros/s/AKfycby_0AhHXObYvpUMeSEJUlIVh8c1oxz29Au7JHbX4aKeVigE8Wq9KI1D48EcuWdzIIxsMQ/exec" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+  <script>
+    window.addEventListener('message', function(e) {
+      if (!e.data || !e.data.type) return;
+      if (e.data.type === 'SET_DATA') {
+        localStorage.setItem(e.data.key, e.data.value);
+      } else if (e.data.type === 'REMOVE_DATA') {
+        localStorage.removeItem(e.data.key);
+      } else if (e.data.type === 'INIT_STORAGE') {
+        var data = {};
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          data[k] = localStorage.getItem(k);
+        }
+        e.source.postMessage({ type: 'STORAGE_SYNC', data: data }, '*');
+      }
+    });
+  </script>
+</body>
+</html>
