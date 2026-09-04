@@ -4099,23 +4099,6 @@
         return;
       }
 
-      // Auto-populate item name from file name (without extension) if adding new item or field is empty
-      if (file && file.name) {
-        const rawName = file.name.replace(/\.[^/.]+$/, "").trim();
-        const itemNameInput = document.getElementById('item-name');
-        const modalTitle = document.getElementById('item-modal-title');
-        const isAdding = modalTitle && modalTitle.innerText.includes('เพิ่ม');
-        
-        // Don't auto-fill generic screenshot names like 'image', 'image (1)', 'blob'
-        if (rawName && !/^image(\s*\(\d+\))?$/i.test(rawName) && rawName.toLowerCase() !== 'blob') {
-          if (itemNameInput && (isAdding || !itemNameInput.value.trim())) {
-            itemNameInput.value = rawName;
-            itemNameInput.focus();
-            itemNameInput.select();
-          }
-        }
-      }
-
       const reader = new FileReader();
       reader.onload = function(e) {
         const img = new Image();
@@ -4228,10 +4211,10 @@
         if (item) {
           document.getElementById('item-modal-title').innerText = 'แก้ไขรายการพัสดุ';
           document.getElementById('item-id').value = item.id;
-          document.getElementById('item-name').value = item.name;
-          document.getElementById('item-category').value = item.category;
-          document.getElementById('item-qty').value = item.qtyRemaining;
-          document.getElementById('item-price').value = item.unitPrice;
+          document.getElementById('item-name').value = item.name || '';
+          document.getElementById('item-category').value = item.category || 'วัสดุสำนักงาน 07';
+          document.getElementById('item-qty').value = item.qtyRemaining != null ? item.qtyRemaining : '';
+          document.getElementById('item-price').value = item.unitPrice != null ? item.unitPrice : '';
           document.getElementById('item-min-qty').value = (item.minStock != null && !isNaN(Number(item.minStock))) ? item.minStock : 5;
           document.getElementById('item-max-qty').value = (item.maxStock != null && !isNaN(Number(item.maxStock))) ? item.maxStock : 20;
           document.getElementById('item-unit').value = item.unit || 'ชิ้น';
@@ -4243,6 +4226,10 @@
         document.getElementById('item-modal-title').innerText = 'เพิ่มรายการพัสดุใหม่';
         document.getElementById('form-item').reset();
         document.getElementById('item-id').value = '';
+        document.getElementById('item-name').value = '';
+        document.getElementById('item-category').value = 'วัสดุสำนักงาน 07';
+        document.getElementById('item-qty').value = '';
+        document.getElementById('item-price').value = '';
         document.getElementById('item-min-qty').value = 5;
         document.getElementById('item-max-qty').value = 20;
         document.getElementById('item-unit').value = 'ชิ้น';
@@ -4254,17 +4241,24 @@
     }
 
     async function saveItemData() {
+      const nameVal = (document.getElementById('item-name')?.value || '').trim();
+      if (!nameVal) {
+        Swal.fire('กรุณาระบุข้อมูล', 'กรุณากรอกชื่อรายการพัสดุ', 'warning');
+        document.getElementById('item-name')?.focus();
+        return;
+      }
+
       const minStockVal = Number(document.getElementById('item-min-qty').value);
       const maxStockVal = Number(document.getElementById('item-max-qty').value);
       const unitVal = (document.getElementById('item-unit')?.value || '').trim() || 'ชิ้น';
       const sourceVal = (document.getElementById('item-source')?.value || '').trim();
 
       const itemData = {
-        id: document.getElementById('item-id').value,
-        name: document.getElementById('item-name').value.trim(),
-        category: document.getElementById('item-category').value,
-        qtyRemaining: Number(document.getElementById('item-qty').value) || 0,
-        unitPrice: Number(document.getElementById('item-price').value) || 0,
+        id: (document.getElementById('item-id')?.value || '').trim(),
+        name: nameVal,
+        category: document.getElementById('item-category')?.value || 'วัสดุสำนักงาน 07',
+        qtyRemaining: Number(document.getElementById('item-qty')?.value) || 0,
+        unitPrice: Number(document.getElementById('item-price')?.value) || 0,
         minStock: (!isNaN(minStockVal) && minStockVal >= 0) ? minStockVal : 5,
         maxStock: (!isNaN(maxStockVal) && maxStockVal > 0) ? maxStockVal : 20,
         unit: unitVal,
@@ -4275,42 +4269,49 @@
         remark: sourceVal ? ('ซื้อมาจาก ' + sourceVal) : 'บันทึกผ่านระบบเว็บ'
       };
 
-      if (!itemData.name) {
-        Swal.fire('กรุณาระบุข้อมูล', 'กรุณากรอกชื่อรายการพัสดุ', 'warning');
-        return;
-      }
-
       Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
         const res = await apiCall('saveItem', itemData);
-        if (res.success) {
-          bootstrap.Modal.getInstance(document.getElementById('modal-item')).hide();
-          Swal.fire('สำเร็จ', res.msg, 'success');
-          loadInventoryData();
-          loadStockLogsData();
+        if (res && res.success) {
+          const modalEl = document.getElementById('modal-item');
+          const modalInst = bootstrap.Modal.getInstance(modalEl);
+          if (modalInst) modalInst.hide();
+          Swal.fire('สำเร็จ', res.msg || 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+          await loadInventoryData();
+          if (typeof loadStockLogsData === 'function') loadStockLogsData();
         } else {
-          Swal.fire('ขัดข้อง', res.msg, 'error');
+          Swal.fire('ขัดข้อง', (res && res.msg) || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
         }
       } catch (e) {
-        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + (e.message || e), 'error');
       }
     }
 
     async function deleteItemAction(itemId) {
-      const confirm = await Swal.fire({ title: 'ยืนยันการลบ?', text: `ต้องการลบรายการพัสดุรหัส ${itemId} หรือไม่?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'ลบรายการ', cancelButtonText: 'ยกเลิก' });
+      const confirm = await Swal.fire({ 
+        title: 'ยืนยันการลบ?', 
+        text: (itemId && itemId.trim()) ? `ต้องการลบรายการพัสดุรหัส ${itemId} หรือไม่?` : 'ต้องการลบแถวที่ไม่มีข้อมูลออกจากระบบหรือไม่?', 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonText: 'ลบรายการ', 
+        cancelButtonText: 'ยกเลิก' 
+      });
       if (!confirm.isConfirmed) return;
 
+      Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
         const opId = currentUser ? currentUser.id : '';
         const opName = currentUser ? currentUser.name : 'เจ้าหน้าที่ธุรการ';
-        const res = await apiCall('deleteItem', itemId, opId, opName);
-        if (res.success) {
-          Swal.fire('ลบสำเร็จ', res.msg, 'success');
-          loadInventoryData();
-          loadStockLogsData();
+        const res = await apiCall('deleteItem', (itemId || '').trim(), opId, opName);
+        if (res && res.success) {
+          Swal.fire('ลบสำเร็จ', res.msg || 'ลบรายการเรียบร้อยแล้ว', 'success');
+          await loadInventoryData();
+          if (typeof loadStockLogsData === 'function') loadStockLogsData();
+        } else {
+          Swal.fire('ขัดข้อง', (res && res.msg) || 'ไม่สามารถลบรายการได้', 'error');
         }
       } catch (e) {
-        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถลบรายการได้', 'error');
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถลบรายการได้: ' + (e.message || e), 'error');
       }
     }
 
