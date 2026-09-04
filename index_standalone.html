@@ -211,24 +211,42 @@
 
     /* Input controls & Form Selects */
     .form-control-ios,
-    .form-select.form-control-ios,
-    .form-control,
-    .form-select {
+    .form-control {
       background: rgba(255, 255, 255, 0.95);
       border: 1px solid rgba(0, 0, 0, 0.14);
-      border-radius: 14px;
-      padding: 11px 15px;
-      font-size: 0.95rem;
+      border-radius: 12px;
+      padding: 6px 14px;
+      min-height: 40px;
+      line-height: 1.5;
+      font-size: 0.92rem;
       color: #0f172a !important;
       font-weight: 500;
       transition: all 0.2s ease;
+      box-sizing: border-box;
+      vertical-align: middle;
+    }
+
+    .form-select.form-control-ios,
+    .form-select {
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.14);
+      border-radius: 12px;
+      padding: 6px 36px 6px 14px;
+      min-height: 40px;
+      line-height: 1.5;
+      font-size: 0.92rem;
+      color: #0f172a !important;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      vertical-align: middle;
     }
 
     .form-control-ios:focus,
-    .form-select.form-control-ios:focus,
     .form-control:focus,
+    .form-select.form-control-ios:focus,
     .form-select:focus {
-      background: #ffffff;
+      background-color: #ffffff;
       border-color: var(--ios-primary);
       box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
       outline: none;
@@ -1832,7 +1850,7 @@
                   </h4>
                 </div>
                 <div>
-                  <button class="btn btn-ios btn-ios-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm text-nowrap" style="height: 38px; font-weight: 500;" onclick="openStockReportModal()">
+                  <button class="btn btn-ios btn-ios-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm text-nowrap" style="min-height: 40px; height: 40px; font-weight: 500;" onclick="openStockReportModal()">
                     <i class="fas fa-print"></i>พิมพ์รายงานเสนอขอเบิกเติมสต๊อก
                   </button>
                 </div>
@@ -1885,10 +1903,10 @@
                   <p class="text-muted-ios small mb-0">บันทึกและตรวจสอบย้อนหลังการรับเข้า เติมสต๊อก และปรับปรุงข้อมูลพัสดุ</p>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap w-100 w-md-auto">
-                  <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1" style="height: 38px;" onclick="loadStockLogsData()">
+                  <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1" style="min-height: 40px; height: 40px;" onclick="loadStockLogsData()">
                     <i class="fas fa-sync-alt me-1"></i>รีเฟรช
                   </button>
-                  <button class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="height: 38px;" onclick="openStockLogReportModal()">
+                  <button class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="openStockLogReportModal()">
                     <i class="fas fa-print me-1"></i>พิมพ์รายงานประวัตินำเข้า
                   </button>
                 </div>
@@ -2320,7 +2338,7 @@
                   </select>
                 </div>
                 <div class="col-md-3 text-md-end">
-                  <button type="button" class="btn btn-ios btn-ios-secondary btn-sm" onclick="clearStockReportFilters()" style="height:38px;">
+                  <button type="button" class="btn btn-ios btn-ios-secondary btn-sm" onclick="clearStockReportFilters()" style="min-height:40px; height:40px;">
                     <i class="fas fa-undo-alt me-1"></i>ล้างตัวกรอง
                   </button>
                 </div>
@@ -2335,17 +2353,17 @@
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small text-muted-ios mb-1">วันที่เริ่มต้น</label>
-                  <input type="date" id="report-date-from" class="form-control form-control-ios" style="height:38px;">
+                  <input type="date" id="report-date-from" class="form-control form-control-ios" style="min-height:40px; height:40px;">
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small text-muted-ios mb-1">วันที่สิ้นสุด</label>
-                  <input type="date" id="report-date-to" class="form-control form-control-ios" style="height:38px;">
+                  <input type="date" id="report-date-to" class="form-control form-control-ios" style="min-height:40px; height:40px;">
                 </div>
                 <div class="col-md-auto">
-                  <button class="btn btn-ios btn-ios-primary btn-sm" onclick="applyReportFilter()" style="height:38px;">
+                  <button class="btn btn-ios btn-ios-primary btn-sm" onclick="applyReportFilter()" style="min-height:40px; height:40px;">
                     <i class="fas fa-search me-1"></i>กรองรายงาน
                   </button>
-                  <button class="btn btn-ios btn-ios-secondary btn-sm ms-2" onclick="clearReportFilter()" style="height:38px;">
+                  <button class="btn btn-ios btn-ios-secondary btn-sm ms-2" onclick="clearReportFilter()" style="min-height:40px; height:40px;">
                     <i class="fas fa-times me-1"></i>รีเซต
                   </button>
                 </div>
@@ -2358,13 +2376,13 @@
               <div class="row g-2 align-items-end">
                 <div class="col-md-3">
                   <label class="form-label small text-muted-ios mb-1">หมวดหมู่</label>
-                  <select id="report-log-filter-cat" class="form-select form-control-ios" style="height:38px;" onchange="renderCurrentReport()">
+                  <select id="report-log-filter-cat" class="form-select form-control-ios" style="min-height:40px; height:40px;" onchange="renderCurrentReport()">
                     <option value="ALL">-- ทุกหมวดหมู่ --</option>
                   </select>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small text-muted-ios mb-1">ประเภทรายการ</label>
-                  <select id="report-log-filter-action" class="form-select form-control-ios" style="height:38px;" onchange="renderCurrentReport()">
+                  <select id="report-log-filter-action" class="form-select form-control-ios" style="min-height:40px; height:40px;" onchange="renderCurrentReport()">
                     <option value="ALL">-- ทุกประเภท --</option>
                     <option value="เพิ่มพัสดุใหม่">เพิ่มพัสดุใหม่</option>
                     <option value="เติมสต๊อก / นำเข้า">เติมสต๊อก / นำเข้า</option>
@@ -2375,14 +2393,14 @@
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small text-muted-ios mb-1">วันที่เริ่มต้น</label>
-                  <input type="date" id="report-log-date-from" class="form-control form-control-ios" style="height:38px;" onchange="renderCurrentReport()">
+                  <input type="date" id="report-log-date-from" class="form-control form-control-ios" style="min-height:40px; height:40px;" onchange="renderCurrentReport()">
                 </div>
                 <div class="col-md-2">
                   <label class="form-label small text-muted-ios mb-1">วันที่สิ้นสุด</label>
-                  <input type="date" id="report-log-date-to" class="form-control form-control-ios" style="height:38px;" onchange="renderCurrentReport()">
+                  <input type="date" id="report-log-date-to" class="form-control form-control-ios" style="min-height:40px; height:40px;" onchange="renderCurrentReport()">
                 </div>
                 <div class="col-md-2">
-                  <button class="btn btn-ios btn-ios-secondary btn-sm w-100" onclick="clearStockLogReportFilter()" style="height:38px;">
+                  <button class="btn btn-ios btn-ios-secondary btn-sm w-100" onclick="clearStockLogReportFilter()" style="min-height:40px; height:40px;">
                     <i class="fas fa-times me-1"></i>รีเซตตัวกรอง
                   </button>
                 </div>
