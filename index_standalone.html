@@ -1513,7 +1513,7 @@
           <!-- TAB 2: REQUISITION HISTORY -->
           <div id="tab-history" class="tab-content-page hidden">
             <div class="glass-card p-4">
-              <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                   <h4 class="fw-bold mb-1"><i class="fas fa-history text-primary me-2"></i>ประวัติการเบิกวัสดุ</h4>
                   <p class="text-muted-ios small mb-0">รายการคำขอเบิกพัสดุทั้งหมดของคุณและสถานะการอนุมัติ</p>
@@ -1523,10 +1523,36 @@
                 </button>
               </div>
 
+              <!-- History Batch Action Bar (Shown when items are selected) -->
+              <div id="history-batch-action-bar" class="d-none glass-card p-3 mb-3" style="background: rgba(0, 122, 255, 0.08); border-left: 4px solid var(--ios-primary); border-radius: 12px; transition: all 0.2s ease;">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-ios badge-ios-primary px-3 py-2" id="history-selected-count-badge" style="font-size: 0.85rem;">
+                      <i class="fas fa-check-square me-1"></i>เลือกแล้ว 0 รายการ
+                    </span>
+                    <span class="small fw-semibold text-muted-ios" id="history-selected-total-val">มูลค่ารวม: ฿0</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-ios btn-sm btn-ios-secondary text-danger d-inline-flex align-items-center gap-1" onclick="deleteSelectedHistoryRequests()">
+                      <i class="fas fa-trash-alt"></i> ลบรายการที่เลือก
+                    </button>
+                    <button type="button" class="btn btn-ios btn-sm btn-ios-primary d-inline-flex align-items-center gap-1" onclick="printSelectedHistoryTickets()">
+                      <i class="fas fa-print"></i> พิมพ์ใบเบิกที่เลือก
+                    </button>
+                    <button type="button" class="btn btn-ios btn-sm btn-ios-secondary d-inline-flex align-items-center gap-1" onclick="clearHistorySelection()">
+                      <i class="fas fa-times"></i> ยกเลิก
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="table-responsive">
-                <table class="table table-ios w-100">
+                <table class="table table-ios w-100 align-middle">
                   <thead>
                     <tr>
+                      <th style="width: 44px; text-align: center;">
+                        <input type="checkbox" id="history-select-all" class="form-check-input" style="cursor: pointer; width: 1.15em; height: 1.15em;" onchange="toggleSelectAllHistory(this)" title="เลือกทั้งหมด">
+                      </th>
                       <th>รหัสคำขอ</th>
                       <th>วันเวลาทำรายการ</th>
                       <th>รายการวัสดุ</th>
@@ -2458,6 +2484,7 @@
       else if (action === 'loginUser')          { p.userId = args[0]; p.password = args[1]; }
       else if (action === 'submitRequisition')  { p.reqData = args[0]; }
       else if (action === 'deleteRequest')      { p.reqId = args[0]; }
+      else if (action === 'deleteMultipleRequests') { p.reqIds = (Array.isArray(args[0]) ? args[0] : (args[0] && args[0].reqIds ? args[0].reqIds : args[0])); }
       else if (action === 'editRequest')        { p.reqId = args[0]; p.editData = args[1]; p.newPurpose = args[1]; }
       else if (action === 'updateRequestStatus'){ p.reqId = args[0]; p.newStatus = args[1]; p.handlerName = args[2]; }
       else if (action === 'getRequests')        { p.userId = args[0]; p.role = args[1]; }
@@ -2495,6 +2522,15 @@
           });
       });
     }
+
+    // ================= PERFORMANCE: DEBOUNCE UTILITY =================
+    function debounce(func, wait = 120) {
+      let timeout;
+      return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+      };
     }
 
     // ================= IFRAME STORAGE SYNC =================
@@ -3657,6 +3693,8 @@
     }
 
     // ================= TAB 2: HISTORY & APPROVALS =================
+    let selectedHistoryReqIds = new Set();
+
     async function loadHistoryData() {
       await fetchAllDataFast(false);
       renderHistoryTable();
@@ -3664,13 +3702,24 @@
 
     function renderHistoryTable() {
       const body = document.getElementById('history-table-body');
-      if (requestsData.length === 0) {
-        body.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted-ios">ยังไม่มีประวัติการเบิกพัสดุ</td></tr>`;
+      if (!body) return;
+
+      if (!requestsData || requestsData.length === 0) {
+        body.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted-ios">ยังไม่มีประวัติการเบิกพัสดุ</td></tr>`;
+        selectedHistoryReqIds.clear();
+        updateHistoryBatchBarUI();
         return;
+      }
+
+      // Cleanup any selected IDs that no longer exist in requestsData
+      const validReqIds = new Set(requestsData.map(r => r.id));
+      for (const id of selectedHistoryReqIds) {
+        if (!validReqIds.has(id)) selectedHistoryReqIds.delete(id);
       }
 
       let html = '';
       requestsData.forEach(r => {
+        const isSelected = selectedHistoryReqIds.has(r.id);
         let statusBadge = '';
         if (r.status === 'เบิกเรียบร้อยแล้ว' || r.status === 'Approved') {
           statusBadge = `<span class="badge badge-ios badge-ios-success">เบิกเรียบร้อยแล้ว</span>`;
@@ -3680,15 +3729,18 @@
           statusBadge = `<span class="badge badge-ios badge-ios-danger">${r.status}</span>`;
         }
 
-        const itemsText = r.items.map(i => `${i.name} (x${i.qty})`).join(', ');
-        const dateStr = new Date(r.timestamp).toLocaleString('th-TH');
+        const itemsText = (r.items || []).map(i => `${i.name} (x${i.qty})`).join(', ');
+        const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('th-TH') : '-';
 
         html += `
-          <tr>
+          <tr id="history-row-${r.id}" class="${isSelected ? 'table-active' : ''}" style="${isSelected ? 'background-color: rgba(0, 122, 255, 0.08); transition: background 0.2s;' : 'transition: background 0.2s;'}">
+            <td style="text-align: center; vertical-align: middle;">
+              <input type="checkbox" class="form-check-input history-row-cb" value="${r.id}" ${isSelected ? 'checked' : ''} onchange="toggleSelectHistoryRow('${r.id}', this)" onclick="event.stopPropagation()" style="cursor: pointer; width: 1.15em; height: 1.15em;">
+            </td>
             <td class="fw-bold">${r.id}</td>
             <td class="small text-muted-ios">${dateStr}</td>
             <td class="small" style="max-width: 250px;">${itemsText}</td>
-            <td class="fw-semibold">฿${r.totalPrice.toLocaleString()}</td>
+            <td class="fw-semibold">฿${Number(r.totalPrice || 0).toLocaleString()}</td>
             <td>${statusBadge}</td>
             <td class="small text-muted-ios">${r.handledBy || r.userName || '-'}</td>
             <td>
@@ -3699,6 +3751,185 @@
           </tr>`;
       });
       body.innerHTML = html;
+      updateHistorySelectAllState();
+      updateHistoryBatchBarUI();
+    }
+
+    function toggleSelectAllHistory(masterCb) {
+      if (!requestsData || requestsData.length === 0) return;
+      if (masterCb.checked) {
+        requestsData.forEach(r => selectedHistoryReqIds.add(r.id));
+      } else {
+        selectedHistoryReqIds.clear();
+      }
+      renderHistoryTable();
+    }
+
+    function toggleSelectHistoryRow(reqId, cb) {
+      if (cb.checked) {
+        selectedHistoryReqIds.add(reqId);
+      } else {
+        selectedHistoryReqIds.delete(reqId);
+      }
+      const row = document.getElementById(`history-row-${reqId}`);
+      if (row) {
+        if (cb.checked) {
+          row.classList.add('table-active');
+          row.style.backgroundColor = 'rgba(0, 122, 255, 0.08)';
+        } else {
+          row.classList.remove('table-active');
+          row.style.backgroundColor = '';
+        }
+      }
+      updateHistorySelectAllState();
+      updateHistoryBatchBarUI();
+    }
+
+    function updateHistorySelectAllState() {
+      const masterCb = document.getElementById('history-select-all');
+      if (!masterCb) return;
+      const total = requestsData ? requestsData.length : 0;
+      const selectedCount = selectedHistoryReqIds.size;
+      if (total > 0 && selectedCount === total) {
+        masterCb.checked = true;
+        masterCb.indeterminate = false;
+      } else if (selectedCount > 0 && selectedCount < total) {
+        masterCb.checked = false;
+        masterCb.indeterminate = true;
+      } else {
+        masterCb.checked = false;
+        masterCb.indeterminate = false;
+      }
+    }
+
+    function clearHistorySelection() {
+      selectedHistoryReqIds.clear();
+      renderHistoryTable();
+    }
+
+    function updateHistoryBatchBarUI() {
+      const bar = document.getElementById('history-batch-action-bar');
+      const badge = document.getElementById('history-selected-count-badge');
+      const valEl = document.getElementById('history-selected-total-val');
+      if (!bar) return;
+
+      const count = selectedHistoryReqIds.size;
+      if (count > 0) {
+        bar.classList.remove('d-none');
+        if (badge) badge.innerHTML = `<i class="fas fa-check-square me-1"></i>เลือกแล้ว ${count} รายการ`;
+        
+        let totalVal = 0;
+        if (requestsData) {
+          requestsData.forEach(r => {
+            if (selectedHistoryReqIds.has(r.id)) {
+              totalVal += Number(r.totalPrice || 0);
+            }
+          });
+        }
+        if (valEl) valEl.innerText = `มูลค่ารวม: ฿${totalVal.toLocaleString()}`;
+      } else {
+        bar.classList.add('d-none');
+      }
+    }
+
+    async function deleteSelectedHistoryRequests() {
+      const count = selectedHistoryReqIds.size;
+      if (count === 0) {
+        Swal.fire('กรุณาเลือกรายการ', 'กรุณาติ๊กเลือกรายการที่ต้องการลบอย่างน้อย 1 รายการ', 'info');
+        return;
+      }
+
+      const idList = Array.from(selectedHistoryReqIds);
+      const confirm = await Swal.fire({
+        title: `ยืนยันการลบ ${count} รายการที่เลือก?`,
+        html: `คุณต้องการลบรายการเบิกพัสดุที่เลือกทั้งหมด <b>${count}</b> รายการ ใช่หรือไม่?<br><div class="mt-2 p-2 rounded bg-light small text-danger text-start"><i class="fas fa-info-circle me-1"></i><b>หมายเหตุ:</b> ระบบจะทำการคำนวณคืนยอดสต๊อกพัสดุของทุกรายการที่เลือกลบกลับเข้าคลังให้โดยอัตโนมัติ</div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: `<i class="fas fa-trash-alt me-1"></i>ลบ ${count} รายการ`,
+        confirmButtonColor: '#ff3b30',
+        cancelButtonText: 'ยกเลิก',
+        reverseButtons: true
+      });
+
+      if (!confirm.isConfirmed) return;
+
+      Swal.fire({ 
+        title: 'กำลังลบรายการและคืนสต๊อก...', 
+        html: `กำลังประมวลผล ${count} รายการ โปรดรอสักครู่`,
+        allowOutsideClick: false, 
+        didOpen: () => Swal.showLoading() 
+      });
+
+      try {
+        let res;
+        try {
+          res = await apiCall('deleteMultipleRequests', idList);
+        } catch (apiErr) {
+          console.warn('Batch delete failed, falling back to sequential delete:', apiErr);
+        }
+
+        // Fallback if backend API deleteMultipleRequests is not yet active
+        if (!res || !res.success) {
+          let successCount = 0;
+          for (const reqId of idList) {
+            try {
+              const singleRes = await apiCall('deleteRequest', reqId);
+              if (singleRes && singleRes.success) successCount++;
+            } catch (e) {
+              console.error('Error deleting req', reqId, e);
+            }
+          }
+          res = { success: successCount > 0, msg: `ลบรายการเบิกเรียบร้อยแล้ว ${successCount}/${count} รายการ` };
+        }
+
+        if (res.success) {
+          selectedHistoryReqIds.clear();
+          Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ',
+            text: res.msg || `ลบ ${count} รายการและคืนสต๊อกพัสดุเรียบร้อยแล้ว`,
+            timer: 2000,
+            showConfirmButton: false
+          });
+          await fetchAllDataFast(false);
+          renderHistoryTable();
+          renderDashboardStats();
+          renderStockView();
+          renderMaterialGrid();
+        } else {
+          Swal.fire('ขัดข้อง', res.msg || 'ไม่สามารถลบรายการได้', 'error');
+        }
+      } catch (e) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถลบรายการได้ กรุณาลองใหม่อีกครั้ง', 'error');
+      }
+    }
+
+    function printSelectedHistoryTickets() {
+      const count = selectedHistoryReqIds.size;
+      if (count === 0) {
+        Swal.fire('กรุณาเลือกรายการ', 'กรุณาติ๊กเลือกรายการที่ต้องการพิมพ์อย่างน้อย 1 รายการ', 'info');
+        return;
+      }
+
+      if (!requestsData || requestsData.length === 0) return;
+      const selectedReqs = requestsData.filter(r => selectedHistoryReqIds.has(r.id));
+      if (selectedReqs.length === 0) return;
+
+      let combinedHTML = selectedReqs.map((req, index) => `
+        <div class="batch-ticket-wrapper ${index < selectedReqs.length - 1 ? 'mb-5 pb-4 border-bottom' : ''}" style="${index < selectedReqs.length - 1 ? 'page-break-after: always;' : ''}">
+          <div class="d-flex justify-content-between align-items-center mb-2 px-2 no-print">
+            <span class="badge badge-ios badge-ios-primary">ใบเบิกลำดับที่ ${index + 1} จาก ${selectedReqs.length} (${req.id})</span>
+          </div>
+          ${generateOfficialTicketHTML(req)}
+        </div>
+      `).join('');
+
+      const ticketBody = document.getElementById('ticket-modal-body');
+      if (ticketBody) {
+        ticketBody.innerHTML = combinedHTML;
+        const modal = new bootstrap.Modal(document.getElementById('modal-ticket'));
+        modal.show();
+      }
     }
 
     async function deleteRequestAction(reqId) {
@@ -3717,6 +3948,7 @@
       try {
         const res = await apiCall('deleteRequest', reqId);
         if (res.success) {
+          if (selectedHistoryReqIds.has(reqId)) selectedHistoryReqIds.delete(reqId);
           Swal.fire('สำเร็จ', res.msg, 'success');
           await fetchAllDataFast(false);
           renderHistoryTable();
