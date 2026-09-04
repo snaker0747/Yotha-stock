@@ -3210,15 +3210,7 @@
       const statusFilter = document.getElementById('stockview-filter-status')?.value || 'ALL';
       const catFilter = document.getElementById('stockview-filter-category')?.value || 'ALL';
 
-      // 1. Total summary calculations across all items
-      let totalItems = itemsData.length;
-      let totalQty = 0;
-      let criticalCount = 0;
-      let warningCount = 0;
-      let healthyCount = 0;
-      let totalReorderQty = 0;
-      let totalReorderCost = 0;
-
+      // 1. Enrich all items with stock metrics
       const enriched = itemsData.map(it => {
         const qty = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
         const price = Number(it.unitPrice) || 0;
@@ -3229,19 +3221,6 @@
         const isLow = (qty <= minVal);
         const suggestedReorder = Math.max(0, maxVal - qty);
         const reorderCost = suggestedReorder * price;
-
-        totalQty += qty;
-        if (isOut) {
-          criticalCount++;
-          totalReorderQty += suggestedReorder;
-          totalReorderCost += reorderCost;
-        } else if (isLow) {
-          warningCount++;
-          totalReorderQty += suggestedReorder;
-          totalReorderCost += reorderCost;
-        } else {
-          healthyCount++;
-        }
 
         return {
           ...it,
@@ -3256,14 +3235,59 @@
         };
       });
 
-      // 2. Render 4 KPI Stat Cards
+      // 2. Filter dataset based on selected Category and Search keyword for KPI Summary calculation
+      const categoryMatched = enriched.filter(it => {
+        if (catFilter !== 'ALL' && it.category !== catFilter) return false;
+        if (keyword && !(
+          (it.name && it.name.toLowerCase().includes(keyword)) ||
+          (it.id && it.id.toLowerCase().includes(keyword)) ||
+          (it.category && it.category.toLowerCase().includes(keyword))
+        )) return false;
+        return true;
+      });
+
+      // 3. Compute KPI Summary Stats dynamically for the selected Category / Search
+      let totalItems = categoryMatched.length;
+      let totalQty = 0;
+      let criticalCount = 0;
+      let warningCount = 0;
+      let healthyCount = 0;
+      let totalReorderQty = 0;
+      let totalReorderCost = 0;
+
+      categoryMatched.forEach(it => {
+        totalQty += it.qty;
+        if (it.isOut) {
+          criticalCount++;
+          totalReorderQty += it.suggestedReorder;
+          totalReorderCost += it.reorderCost;
+        } else if (it.isLow) {
+          warningCount++;
+          totalReorderQty += it.suggestedReorder;
+          totalReorderCost += it.reorderCost;
+        } else {
+          healthyCount++;
+        }
+      });
+
+      let card1Label = '📦 รายการทั้งหมดในคลัง';
+      let card1Sub = `ยอดรวมคงเหลือ: <b>${totalQty.toLocaleString()}</b> ชิ้น`;
+      if (catFilter !== 'ALL') {
+        card1Label = `📦 หมวด: ${catFilter}`;
+        card1Sub = `คงเหลือในหมวดนี้: <b>${totalQty.toLocaleString()}</b> ชิ้น`;
+      } else if (keyword) {
+        card1Label = `📦 ผลค้นหา: "${keyword}"`;
+        card1Sub = `คงเหลือรวม: <b>${totalQty.toLocaleString()}</b> ชิ้น`;
+      }
+
+      // 4. Render 4 KPI Stat Cards with dynamic updated numbers
       if (statsContainer) {
         statsContainer.innerHTML = `
           <div class="col-6 col-lg-3">
             <div class="glass-card p-3 text-center h-100 d-flex flex-column justify-content-center">
-              <span class="small text-muted-ios">📦 รายการทั้งหมดในคลัง</span>
+              <span class="small text-muted-ios text-truncate" title="${catFilter !== 'ALL' ? catFilter : card1Label}">${card1Label}</span>
               <h4 class="fw-bold my-1 text-primary">${totalItems.toLocaleString()} <span class="fs-6 text-muted-ios">รายการ</span></h4>
-              <span class="small text-muted-ios">ยอดรวมคงเหลือ: <b>${totalQty.toLocaleString()}</b> ชิ้น</span>
+              <span class="small text-muted-ios">${card1Sub}</span>
             </div>
           </div>
           <div class="col-6 col-lg-3">
@@ -3290,8 +3314,8 @@
         `;
       }
 
-      // 3. Filter items for list display
-      let filtered = enriched.filter(it => {
+      // 5. Filter items for list display
+      let filtered = categoryMatched.filter(it => {
         if (catFilter !== 'ALL' && it.category !== catFilter) return false;
         if (keyword && !(
           (it.name && it.name.toLowerCase().includes(keyword)) ||
@@ -4366,7 +4390,19 @@
       });
 
       if (countEl) {
-        countEl.innerText = `แสดง ${filtered.length.toLocaleString()} จาก ${itemsData.length.toLocaleString()} รายการ`;
+        let totalFilteredQty = 0;
+        let totalFilteredVal = 0;
+        filtered.forEach(it => {
+          const rQty = Number(it.qtyRemaining) || 0;
+          totalFilteredQty += rQty;
+          totalFilteredVal += rQty * (Number(it.unitPrice) || 0);
+        });
+
+        if (catFilter !== 'ALL' || statusFilter !== 'ALL' || search) {
+          countEl.innerHTML = `แสดง <b>${filtered.length.toLocaleString()}</b> จาก ${itemsData.length.toLocaleString()} รายการ &bull; คงเหลือ <b>${totalFilteredQty.toLocaleString()}</b> ชิ้น &bull; มูลค่าคงเหลือ <b>฿${totalFilteredVal.toLocaleString()}</b>`;
+        } else {
+          countEl.innerHTML = `แสดงทั้งหมด <b>${itemsData.length.toLocaleString()}</b> รายการ &bull; คงเหลือ <b>${totalFilteredQty.toLocaleString()}</b> ชิ้น &bull; มูลค่าคงเหลือรวม <b>฿${totalFilteredVal.toLocaleString()}</b>`;
+        }
       }
 
       if (filtered.length === 0) {
