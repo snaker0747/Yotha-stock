@@ -2858,17 +2858,19 @@
     }
 
     // ================= TAB 8: STOCK IN / RESTOCK AUDIT LOGS =================
-    async function loadStockLogsData() {
-      Swal.fire({ title: 'กำลังโหลดประวัติ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    async function loadStockLogsData(showLoading = true) {
+      if (showLoading) {
+        Swal.fire({ title: 'กำลังโหลดประวัตินำเข้า...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      }
       try {
         const logs = await apiCall('getStockLogs');
         stockLogsData = logs || [];
         saveDataToCache();
         populateStockLogCategoryFilter();
         renderStockLogsGrid();
-        Swal.close();
+        if (showLoading) Swal.close();
       } catch (e) {
-        Swal.fire('ผิดพลาด', 'ไม่สามารถโหลดประวัตินำเข้าได้', 'error');
+        if (showLoading) Swal.fire('ผิดพลาด', 'ไม่สามารถโหลดประวัตินำเข้าได้', 'error');
       }
     }
 
@@ -4269,16 +4271,16 @@
         remark: sourceVal ? ('ซื้อมาจาก ' + sourceVal) : 'บันทึกผ่านระบบเว็บ'
       };
 
-      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'กำลังบันทึกรายการพัสดุ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
         const res = await apiCall('saveItem', itemData);
         if (res && res.success) {
           const modalEl = document.getElementById('modal-item');
           const modalInst = bootstrap.Modal.getInstance(modalEl);
           if (modalInst) modalInst.hide();
-          Swal.fire('สำเร็จ', res.msg || 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
           await loadInventoryData();
-          if (typeof loadStockLogsData === 'function') loadStockLogsData();
+          if (typeof loadStockLogsData === 'function') loadStockLogsData(false);
+          Swal.fire('สำเร็จ', res.msg || 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
         } else {
           Swal.fire('ขัดข้อง', (res && res.msg) || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
         }
@@ -4298,15 +4300,15 @@
       });
       if (!confirm.isConfirmed) return;
 
-      Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'กำลังลบรายการพัสดุ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
         const opId = currentUser ? currentUser.id : '';
         const opName = currentUser ? currentUser.name : 'เจ้าหน้าที่ธุรการ';
         const res = await apiCall('deleteItem', (itemId || '').trim(), opId, opName);
         if (res && res.success) {
-          Swal.fire('ลบสำเร็จ', res.msg || 'ลบรายการเรียบร้อยแล้ว', 'success');
           await loadInventoryData();
-          if (typeof loadStockLogsData === 'function') loadStockLogsData();
+          if (typeof loadStockLogsData === 'function') loadStockLogsData(false);
+          Swal.fire('ลบสำเร็จ', res.msg || 'ลบรายการเรียบร้อยแล้ว', 'success');
         } else {
           Swal.fire('ขัดข้อง', (res && res.msg) || 'ไม่สามารถลบรายการได้', 'error');
         }
