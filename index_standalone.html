@@ -209,21 +209,75 @@
       color: #ffffff;
     }
 
-    /* Input controls */
-    .form-control-ios {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(0, 0, 0, 0.1);
+    /* Input controls & Form Selects */
+    .form-control-ios,
+    .form-select.form-control-ios,
+    .form-control,
+    .form-select {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.14);
       border-radius: 14px;
-      padding: 12px 16px;
+      padding: 11px 15px;
       font-size: 0.95rem;
+      color: #0f172a !important;
+      font-weight: 500;
       transition: all 0.2s ease;
     }
 
-    .form-control-ios:focus {
+    .form-control-ios:focus,
+    .form-select.form-control-ios:focus,
+    .form-control:focus,
+    .form-select:focus {
       background: #ffffff;
       border-color: var(--ios-primary);
       box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
       outline: none;
+      color: #0f172a !important;
+    }
+
+    /* Form Labels / Field Headings: Darker, sharper, high-contrast, bold & distinct */
+    .form-label,
+    label.form-label,
+    .modal-body label,
+    .glass-card label,
+    .modal-header .modal-title {
+      color: #0f172a !important;
+      font-weight: 600 !important;
+      font-size: 0.88rem !important;
+      margin-bottom: 5px !important;
+      letter-spacing: -0.01em;
+      display: inline-block;
+    }
+
+    .form-label i,
+    label.form-label i {
+      color: var(--ios-primary);
+      font-size: 0.95em;
+    }
+
+    /* Placeholder: Faint, soft, clearly distinct from real typed text (สีลางๆ ชัดเจน) */
+    ::placeholder,
+    ::-webkit-input-placeholder,
+    ::-moz-placeholder,
+    :-ms-input-placeholder,
+    .form-control-ios::placeholder,
+    .form-control::placeholder,
+    .form-select::placeholder,
+    input::placeholder,
+    textarea::placeholder {
+      color: #94a3b8 !important;
+      opacity: 0.55 !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+      letter-spacing: normal !important;
+    }
+
+    /* Small Hint / Helper text below inputs */
+    .form-text,
+    .modal-body .form-text {
+      color: #64748b !important;
+      font-size: 0.76rem !important;
+      font-weight: 400 !important;
     }
 
     /* Hide number input spinner arrows */
@@ -790,19 +844,44 @@
       color: #c9d1e0;
     }
     body.dark-theme .form-control-ios,
+    body.dark-theme .form-select.form-control-ios,
+    body.dark-theme .form-control,
     body.dark-theme .form-select {
-      background: rgba(30, 34, 48, 0.8);
-      border-color: rgba(255, 255, 255, 0.1);
-      color: #e8eaf0;
+      background: rgba(30, 36, 54, 0.92);
+      border-color: rgba(255, 255, 255, 0.14);
+      color: #f8fafc !important;
     }
     body.dark-theme .form-control-ios:focus,
+    body.dark-theme .form-select.form-control-ios:focus,
+    body.dark-theme .form-control:focus,
     body.dark-theme .form-select:focus {
-      background: rgba(35, 40, 58, 0.95);
-      border-color: var(--ios-primary);
-      box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.18);
-      color: #e8eaf0;
+      background: rgba(36, 44, 68, 0.98);
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+      color: #f8fafc !important;
     }
-    body.dark-theme .form-control-ios::placeholder { color: #6b7280; }
+    body.dark-theme .form-label,
+    body.dark-theme label.form-label,
+    body.dark-theme .modal-body label,
+    body.dark-theme .glass-card label,
+    body.dark-theme .modal-header .modal-title {
+      color: #f1f5f9 !important;
+    }
+    body.dark-theme ::placeholder,
+    body.dark-theme ::-webkit-input-placeholder,
+    body.dark-theme ::-moz-placeholder,
+    body.dark-theme :-ms-input-placeholder,
+    body.dark-theme .form-control-ios::placeholder,
+    body.dark-theme .form-control::placeholder,
+    body.dark-theme input::placeholder,
+    body.dark-theme textarea::placeholder {
+      color: #64748b !important;
+      opacity: 0.5 !important;
+    }
+    body.dark-theme .form-text,
+    body.dark-theme .modal-body .form-text {
+      color: #94a3b8 !important;
+    }
     body.dark-theme .btn-ios-secondary {
       background: rgba(255, 255, 255, 0.09);
       color: #c9d1e0;
