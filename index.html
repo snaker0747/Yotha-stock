@@ -6141,6 +6141,8 @@
 
       const targetItemId = String(item.id || '').trim();
       const targetItemName = (item.name || '').trim().toLowerCase();
+      const currentStockRemaining = Number(item.qtyRemaining) || 0;
+      const currentUnitPrice = Number(item.unitPrice) || 0;
 
       // 1. Gather approved requisitions from requestsData (excluding rejected/cancelled)
       const issueTx = [];
@@ -6161,7 +6163,7 @@
 
           if (isMatch) {
             const qty = Number(it.qty) || 0;
-            const price = Number(it.price) || Number(item.unitPrice) || 0;
+            const price = Number(it.price) || currentUnitPrice;
             const cleanDocNo = r.docNo || (r.id ? String(r.id).replace(/^REQ-|^NO\./i, '') : '-');
             issueTx.push({
               type: 'ISSUE',
@@ -6180,8 +6182,11 @@
         });
       });
 
+      const totalIssuedQty = issueTx.reduce((sum, x) => sum + (x.issuedQty || 0), 0);
+
       // 2. Gather Stock In / Receive logs from stockLogsData
       const receiveTx = [];
+      const adjustTx = [];
       const logs = (stockLogsData || []).filter(l => {
         const matchId = (l.itemId && String(l.itemId).trim() === targetItemId);
         const lName = (l.itemName || '').trim().toLowerCase();
@@ -6192,13 +6197,14 @@
       logs.forEach(l => {
         const action = l.actionType || l.action || '';
         const isStockIn = action === 'เพิ่มพัสดุใหม่' || action === 'เติมสต๊อก / นำเข้า' || action.includes('เพิ่ม') || action.includes('เติม') || action.includes('นำเข้า') || (Number(l.qtyChange) > 0);
+        const price = Number(l.unitPrice) || currentUnitPrice;
+        const logDoc = l.id ? String(l.id).replace(/^LOG-/i, '') : (item.docNo || 'รอบ1');
+        const logSupplier = (l.remark || l.note || item.source || '').trim();
+
         if (isStockIn) {
-          const qty = Number(l.qtyChange) || Number(l.qty) || 0;
+          const qty = Math.abs(Number(l.qtyChange) || Number(l.qty) || 0);
           if (qty > 0) {
-            const price = Number(l.unitPrice) || Number(item.unitPrice) || 0;
-            const logDoc = l.id ? String(l.id).replace(/^LOG-/i, '') : (item.docNo || 'รอบ1');
-            const logSupplier = (l.remark || l.note || item.source || '').trim();
-            const receiveText = logSupplier ? (logSupplier.startsWith('ซื้อมาจาก') ? logSupplier : `ซื้อมาจาก ${logSupplier}`) : 'รับเข้าคลังพัสดุ / ยอดยกมา';
+            const receiveText = logSupplier ? (logSupplier.startsWith('ซื้อมาจาก') ? logSupplier : (logSupplier.startsWith('รับจาก') ? logSupplier : `ซื้อมาจาก ${logSupplier}`)) : 'รับเข้าคลังพัสดุ / ยอดยกมา';
 
             receiveTx.push({
               type: 'RECEIVE',
@@ -6214,16 +6220,36 @@
               note: ''
             });
           }
+        } else if (action === 'ปรับลดยอดสต๊อก' || Number(l.qtyChange) < 0) {
+          const qty = Math.abs(Number(l.qtyChange) || 0);
+          if (qty > 0) {
+            adjustTx.push({
+              type: 'ISSUE',
+              timestamp: l.timestamp || new Date().toISOString(),
+              dateStr: formatThaiLedgerDate(l.timestamp),
+              receiveFromPayTo: 'ปรับลดยอดสต๊อก',
+              docNo: logDoc,
+              unitPrice: price,
+              receivedQty: null,
+              receivedPrice: null,
+              issuedQty: qty,
+              issuedPrice: qty * price,
+              note: (l.remark || 'ปรับลดสต๊อก').trim()
+            });
+          }
         }
       });
 
-      // 3. Fallback Initial Receive if no logs exist
+      // 3. Reconcile with actual inventory stockmaster (item.qtyRemaining)
+      // The total stock entering warehouse across all time must equal: Current Remaining + All Issues
+      const allIssuesTotal = totalIssuedQty + adjustTx.reduce((sum, x) => sum + (x.issuedQty || 0), 0);
+      const requiredTotalReceived = currentStockRemaining + allIssuesTotal;
+      const loggedReceivedTotal = receiveTx.reduce((sum, x) => sum + (x.receivedQty || 0), 0);
+
       if (receiveTx.length === 0) {
-        const totalIssuedQty = issueTx.reduce((sum, x) => sum + (x.issuedQty || 0), 0);
-        const startQty = Number(item.qtyReceived) || (Number(item.qtyRemaining) + totalIssuedQty) || 100;
-        const startPrice = Number(item.unitPrice) || 0;
+        // No receive logs at all -> single initial receipt from master
         const startSupplier = (item.source || '').trim();
-        const startText = startSupplier ? (startSupplier.startsWith('ซื้อมาจาก') ? startSupplier : `ซื้อมาจาก ${startSupplier}`) : 'รับเข้าคลังพัสดุ / ยอดยกมา';
+        const startText = startSupplier ? (startSupplier.startsWith('ซื้อมาจาก') ? startSupplier : (startSupplier.startsWith('รับจาก') ? startSupplier : `ซื้อมาจาก ${startSupplier}`)) : 'รับเข้าคลังพัสดุ / ยอดยกมา';
 
         receiveTx.push({
           type: 'RECEIVE',
@@ -6231,17 +6257,47 @@
           dateStr: formatThaiLedgerDate(item.createdDate || item.docDate || '2024-10-16T08:00:00.000Z'),
           receiveFromPayTo: startText,
           docNo: item.docNo || 'รอบ1',
-          unitPrice: startPrice,
-          receivedQty: startQty,
-          receivedPrice: startQty * startPrice,
+          unitPrice: currentUnitPrice,
+          receivedQty: requiredTotalReceived,
+          receivedPrice: requiredTotalReceived * currentUnitPrice,
           issuedQty: null,
           issuedPrice: null,
           note: ''
         });
+      } else if (receiveTx.length === 1 && allIssuesTotal === 0 && loggedReceivedTotal !== requiredTotalReceived) {
+        // Single creation log before manual stock edit -> synchronize log qty to match current stock
+        receiveTx[0].receivedQty = requiredTotalReceived;
+        receiveTx[0].receivedPrice = requiredTotalReceived * (receiveTx[0].unitPrice || currentUnitPrice);
+      } else if (loggedReceivedTotal < requiredTotalReceived) {
+        // Multiple logs but sum is less than actual stock -> prepend opening balance
+        const diff = requiredTotalReceived - loggedReceivedTotal;
+        const startSupplier = (item.source || '').trim();
+        const startText = startSupplier ? (startSupplier.startsWith('ซื้อมาจาก') ? startSupplier : (startSupplier.startsWith('รับจาก') ? startSupplier : `ซื้อมาจาก ${startSupplier}`)) : 'ยอดยกมา / รับเข้าคลังพัสดุ';
+
+        receiveTx.unshift({
+          type: 'RECEIVE',
+          timestamp: '2024-10-16T08:00:00.000Z',
+          dateStr: formatThaiLedgerDate(item.createdDate || item.docDate || '2024-10-16T08:00:00.000Z'),
+          receiveFromPayTo: startText,
+          docNo: item.docNo || 'รอบ1',
+          unitPrice: currentUnitPrice,
+          receivedQty: diff,
+          receivedPrice: diff * currentUnitPrice,
+          issuedQty: null,
+          issuedPrice: null,
+          note: 'ยอดยกมา / ตั้งต้นสต๊อก'
+        });
+      } else if (loggedReceivedTotal > requiredTotalReceived) {
+        // Log sum exceeds stock (and no separate issue logged) -> adjust first log
+        const excess = loggedReceivedTotal - requiredTotalReceived;
+        if (receiveTx[0].receivedQty > excess) {
+          receiveTx[0].receivedQty -= excess;
+          receiveTx[0].receivedPrice = receiveTx[0].receivedQty * (receiveTx[0].unitPrice || currentUnitPrice);
+        }
       }
 
       // 4. Combine all transactions and sort chronologically
-      const allTx = [...receiveTx, ...issueTx];
+      const allTx = [...receiveTx, ...issueTx, ...adjustTx];
       allTx.sort((a, b) => getTimestampMs(a.timestamp) - getTimestampMs(b.timestamp));
 
       // 5. Calculate line-by-line running balances
@@ -6253,7 +6309,7 @@
           runningQty -= (t.issuedQty || 0);
         }
         t.balanceQty = runningQty;
-        t.balancePrice = Math.max(0, runningQty * (t.unitPrice || Number(item.unitPrice) || 0));
+        t.balancePrice = Math.max(0, runningQty * (t.unitPrice || currentUnitPrice));
       });
 
       return {
