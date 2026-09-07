@@ -2437,11 +2437,18 @@
         <div class="modal-body p-4" id="report-modal-body">
           <!-- Dynamically populated -->
         </div>
-        <div class="modal-footer border-0 p-3 no-print-in-report">
-          <button type="button" class="btn btn-ios btn-ios-secondary" data-bs-dismiss="modal">ปิด</button>
-          <button type="button" class="btn btn-ios btn-ios-primary" onclick="printReport()">
-            <i class="fas fa-print me-1"></i>พิมพ์ / บันทึกเป็น PDF
+        <div class="modal-footer border-0 p-3 no-print-in-report d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
+          <button type="button" class="btn btn-ios btn-ios-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i>ปิด
           </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-ios btn-ios-success" onclick="exportCurrentReportToCSV()">
+              <i class="fas fa-file-excel me-1"></i>ส่งออก Excel / CSV
+            </button>
+            <button type="button" class="btn btn-ios btn-ios-primary" onclick="printReport()">
+              <i class="fas fa-print me-1"></i>พิมพ์ / บันทึกเป็น PDF (A4 แนวนอน)
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -5329,7 +5336,7 @@
       const printArea = document.getElementById('print-area');
       if (!reportBody || !printArea) { window.print(); return; }
 
-      setPrintPageOrientation('portrait');
+      setPrintPageOrientation('landscape');
       printArea.innerHTML = reportBody.innerHTML;
       document.body.classList.add('printing-report');
       setTimeout(() => {
@@ -5339,6 +5346,212 @@
           printArea.innerHTML = '';
         }, 1500);
       }, 50);
+    }
+
+    function downloadCSVFile(csvContent, filename) {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCurrentReportToCSV() {
+      const now = new Date();
+      const dateFileStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const timeFileStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      let csv = '\uFEFF'; // UTF-8 BOM for Thai support in MS Excel
+
+      if (currentReportType === 'stock') {
+        const filterCat = document.getElementById('report-filter-stock-cat')?.value || 'ALL';
+        const filterStatus = document.getElementById('report-filter-stock-status')?.value || 'ALL';
+
+        let validItems = (itemsData || []).filter(it => {
+          if (!it || !it.name || !it.name.trim() || it.name === '-' || !it.id || !it.id.trim() || it.id === 'null') return false;
+          return true;
+        });
+
+        let enriched = validItems.map(it => {
+          const qty = it.quantity || 0;
+          const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
+          const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+          const isCritical = qty === 0;
+          const isLow = qty <= minVal;
+          const price = Number(it.price) || 0;
+          let suggestedReorder = 0;
+          if (isCritical || isLow) {
+            suggestedReorder = Math.max(0, maxVal - qty);
+          }
+          const reorderCost = suggestedReorder * price;
+          let statusCode = 'HEALTHY';
+          if (isCritical) statusCode = 'CRITICAL';
+          else if (isLow) statusCode = 'WARNING';
+
+          return {
+            id: it.id || '',
+            name: it.name || '',
+            category: it.category || '',
+            qty,
+            minVal,
+            maxVal,
+            suggestedReorder,
+            price,
+            reorderCost,
+            statusCode
+          };
+        });
+
+        let displayItems = enriched.filter(it => {
+          if (filterCat !== 'ALL' && it.category !== filterCat) return false;
+          if (filterStatus === 'REORDER_ONLY') return it.statusCode === 'CRITICAL' || it.statusCode === 'WARNING';
+          if (filterStatus === 'CRITICAL_ONLY') return it.statusCode === 'CRITICAL';
+          if (filterStatus === 'HEALTHY_ONLY') return it.statusCode === 'HEALTHY';
+          return true;
+        });
+
+        displayItems.sort((a, b) => {
+          const order = { 'CRITICAL': 1, 'WARNING': 2, 'HEALTHY': 3 };
+          return order[a.statusCode] - order[b.statusCode] || a.qty - b.qty;
+        });
+
+        csv += 'ลำดับ,รหัสพัสดุ,ชื่อพัสดุ,หมวดหมู่,เกณฑ์ขั้นต่ำ (Min),เกณฑ์สูงสุด (Max),คงเหลือปัจจุบัน,เสนอขอเบิกเติม,ราคาต่อหน่วย (บาท),ประมาณการงบประมาณ (บาท),หมายเหตุ\n';
+
+        let sumQty = 0, sumReorder = 0, sumCost = 0;
+        displayItems.forEach((it, idx) => {
+          sumQty += it.qty;
+          sumReorder += it.suggestedReorder;
+          sumCost += it.reorderCost;
+          const row = [
+            idx + 1,
+            `"${(it.id || '').replace(/"/g, '""')}"`,
+            `"${(it.name || '').replace(/"/g, '""')}"`,
+            `"${(it.category || '').replace(/"/g, '""')}"`,
+            it.minVal,
+            it.maxVal,
+            it.qty,
+            it.suggestedReorder,
+            it.price,
+            it.reorderCost,
+            '""'
+          ];
+          csv += row.join(',') + '\n';
+        });
+
+        csv += `\n"รวมทั้งสิ้น (${displayItems.length} รายการ)",,,,,,"${sumQty}","${sumReorder}",,"${sumCost}",""\n`;
+        downloadCSVFile(csv, `รายงานสถานะพัสดุ_InStock_${dateFileStr}_${timeFileStr}.csv`);
+
+      } else if (currentReportType === 'history') {
+        const from = document.getElementById('report-date-from')?.value || null;
+        const to = document.getElementById('report-date-to')?.value || null;
+
+        let filtered = (requestsData || []).filter(r => {
+          if (!r || !r.id) return false;
+          const rDate = new Date(r.timestamp);
+          if (isNaN(rDate.getTime())) return true;
+          if (from && rDate < new Date(from + 'T00:00:00')) return false;
+          if (to && rDate > new Date(to + 'T23:59:59')) return false;
+          return true;
+        });
+
+        csv += 'ลำดับ,เลขที่ใบเบิก,วันเวลาเบิก,ผู้ขอเบิก,ฝ่าย/กอง,วัตถุประสงค์,รายการพัสดุ,จำนวนเบิกรวม,มูลค่ารวม (บาท),สถานะ\n';
+
+        let sumQty = 0, sumVal = 0;
+        filtered.forEach((r, idx) => {
+          const dt = new Date(r.timestamp);
+          const dtStr = isNaN(dt.getTime()) ? (r.timestamp || '') : dt.toLocaleString('th-TH');
+          let itemsListStr = '';
+          let totalQty = 0;
+          let totalCost = 0;
+          if (Array.isArray(r.items)) {
+            itemsListStr = r.items.map(i => `${i.name || i.itemId} (${i.qty} ชิ้น)`).join('; ');
+            totalQty = r.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+            totalCost = r.items.reduce((s, i) => s + ((Number(i.qty) || 0) * (Number(i.price) || 0)), 0);
+          }
+          sumQty += totalQty;
+          sumVal += totalCost;
+
+          const row = [
+            idx + 1,
+            `"${(r.id || '').replace(/"/g, '""')}"`,
+            `"${dtStr.replace(/"/g, '""')}"`,
+            `"${(r.requesterName || '').replace(/"/g, '""')}"`,
+            `"${(r.department || '').replace(/"/g, '""')}"`,
+            `"${(r.purpose || '').replace(/"/g, '""')}"`,
+            `"${itemsListStr.replace(/"/g, '""')}"`,
+            totalQty,
+            totalCost,
+            `"${(r.status || '').replace(/"/g, '""')}"`
+          ];
+          csv += row.join(',') + '\n';
+        });
+
+        csv += `\n"รวมทั้งสิ้น (${filtered.length} ใบเบิก)",,,,,,,"${sumQty}","${sumVal}",""\n`;
+        downloadCSVFile(csv, `รายงานประวัติการเบิกจ่าย_${dateFileStr}_${timeFileStr}.csv`);
+
+      } else if (currentReportType === 'stocklog') {
+        const cat = document.getElementById('report-log-filter-cat')?.value || 'ALL';
+        const action = document.getElementById('report-log-filter-action')?.value || 'ALL';
+        const from = document.getElementById('report-log-date-from')?.value || null;
+        const to = document.getElementById('report-log-date-to')?.value || null;
+
+        let filtered = (stockLogsData || []).filter(l => {
+          if (!l) return false;
+          if (cat !== 'ALL' && l.category !== cat) return false;
+          if (action !== 'ALL' && l.actionType !== action) return false;
+          const lDate = new Date(l.timestamp);
+          if (!isNaN(lDate.getTime())) {
+            if (from && lDate < new Date(from + 'T00:00:00')) return false;
+            if (to && lDate > new Date(to + 'T23:59:59')) return false;
+          }
+          return true;
+        });
+
+        csv += 'ลำดับ,รหัส Log,วันเวลาทำรายการ,รหัสพัสดุ,รายการพัสดุ,หมวดหมู่,ประเภทรายการ,จำนวนที่เปลี่ยนแปลง,คงเหลือสุทธิ,ราคาต่อหน่วย (บาท),มูลค่ารวม (บาท),ผู้ทำรายการ,หมายเหตุ/เอกสาร\n';
+
+        filtered.forEach((l, idx) => {
+          const dt = new Date(l.timestamp);
+          const dtStr = isNaN(dt.getTime()) ? (l.timestamp || '') : dt.toLocaleString('th-TH');
+          const row = [
+            idx + 1,
+            `"${(l.id || '').replace(/"/g, '""')}"`,
+            `"${dtStr.replace(/"/g, '""')}"`,
+            `"${(l.itemId || '').replace(/"/g, '""')}"`,
+            `"${(l.itemName || '').replace(/"/g, '""')}"`,
+            `"${(l.category || '').replace(/"/g, '""')}"`,
+            `"${(l.actionType || '').replace(/"/g, '""')}"`,
+            l.qtyChange || 0,
+            l.balanceQty || 0,
+            l.unitPrice || 0,
+            l.totalValue || 0,
+            `"${(l.operatorName || '').replace(/"/g, '""')}"`,
+            `"${(l.remark || '').replace(/"/g, '""')}"`
+          ];
+          csv += row.join(',') + '\n';
+        });
+
+        downloadCSVFile(csv, `รายงานประวัตินำเข้าและเพิ่มพัสดุ_${dateFileStr}_${timeFileStr}.csv`);
+
+      } else {
+        // Executive Report
+        const analytics = calculateExecutiveAnalytics();
+        csv += 'หมวดหมู่,จำนวนรายการพัสดุ,จำนวนคงเหลือรวม,มูลค่ารวม (บาท),จำนวนรายการที่ต้องเติม,งบประมาณที่ต้องเติม (บาท)\n';
+        Object.entries(analytics.catMap || {}).forEach(([cat, d]) => {
+          const row = [
+            `"${cat.replace(/"/g, '""')}"`,
+            d.count || 0,
+            d.qty || 0,
+            d.val || 0,
+            d.needReorderCount || 0,
+            d.reorderBudget || 0
+          ];
+          csv += row.join(',') + '\n';
+        });
+        downloadCSVFile(csv, `รายงานสรุปภาพรวมผู้บริหาร_${dateFileStr}_${timeFileStr}.csv`);
+      }
     }
 
     // ================= REPORT SYSTEM =================
