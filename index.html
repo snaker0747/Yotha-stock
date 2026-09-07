@@ -5880,13 +5880,13 @@
         if (isOut) {
           statusText = 'หมดคลัง';
           statusBadge = '<span style="color:#cc0000; font-weight:bold;">🔴 หมดคลัง (0)</span>';
-          priorityBadge = '<span style="color:#cc0000; font-weight:bold; background:#ffe5e5; padding:2px 8px; border-radius:4px; border:1px solid #ffb3b3;">ด่วนที่สุด (หมดคลัง)</span>';
+          priorityBadge = '<span style="color:#cc0000; font-weight:bold; background:#ffe5e5; padding:2px 8px; border-radius:4px; border:1px solid #ffb3b3;">ด่วนที่สุด</span>';
           statusCode = 'CRITICAL';
           criticalCount++;
         } else if (isLow) {
           statusText = `ต่ำกว่า Min (${minVal})`;
           statusBadge = `<span style="color:#c47a00; font-weight:bold;">🟡 ต่ำกว่าเกณฑ์ (${minVal})</span>`;
-          priorityBadge = '<span style="color:#c47a00; font-weight:bold; background:#fff3d6; padding:2px 8px; border-radius:4px; border:1px solid #ffd6a0;">ควรจัดหาเติม</span>';
+          priorityBadge = '<span style="color:#c47a00; font-weight:bold; background:#fff3d6; padding:2px 8px; border-radius:4px; border:1px solid #ffd6a0;">ควรจัดหา</span>';
           statusCode = 'WARNING';
           warningCount++;
         } else {
