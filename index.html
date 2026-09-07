@@ -5880,13 +5880,13 @@
         if (isOut) {
           statusText = 'หมดคลัง';
           statusBadge = '<span style="color:#cc0000; font-weight:bold;">🔴 หมดคลัง (0)</span>';
-          priorityBadge = '<span style="color:#cc0000; font-weight:bold; background:#ffe5e5; padding:2px 8px; border-radius:4px; border:1px solid #ffb3b3;">ด่วนที่สุด</span>';
+          priorityBadge = '<span style="color:#cc0000; font-weight:bold; background:#ffe5e5; padding:2px 8px; border-radius:4px; border:1px solid #ffb3b3;">ด่วนที่สุด (หมดคลัง)</span>';
           statusCode = 'CRITICAL';
           criticalCount++;
         } else if (isLow) {
           statusText = `ต่ำกว่า Min (${minVal})`;
           statusBadge = `<span style="color:#c47a00; font-weight:bold;">🟡 ต่ำกว่าเกณฑ์ (${minVal})</span>`;
-          priorityBadge = '<span style="color:#c47a00; font-weight:bold; background:#fff3d6; padding:2px 8px; border-radius:4px; border:1px solid #ffd6a0;">ควรจัดหา</span>';
+          priorityBadge = '<span style="color:#c47a00; font-weight:bold; background:#fff3d6; padding:2px 8px; border-radius:4px; border:1px solid #ffd6a0;">ควรจัดหาเติม</span>';
           statusCode = 'WARNING';
           warningCount++;
         } else {
@@ -6001,7 +6001,7 @@
         <!-- REPORT HEADER -->
         <div class="text-center mb-4">
           <img src="${logoSrc}" style="height: 75px; object-fit: contain;" class="d-block mx-auto mb-2">
-          <h3 class="fw-bold mb-1" style="font-size:1.45rem;">แบบรายการพัสดุคงคลัง / In-Stock</h3>
+          <h3 class="fw-bold mb-1" style="font-size:1.45rem;">แบบรายงานรายการเสนอขอเบิก / จัดหาพัสดุเติมคลัง</h3>
           <h5 class="mb-1 text-muted" style="font-size:1.05rem;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
           <p class="small text-muted mb-1">
             ประจำวันที่ ${dateStr} เวลา ${timeStr} น. | ขอบเขตรายงาน: <strong>${filterSummaryText}</strong> | ผู้จัดทำ: <strong>${currentUser ? currentUser.name : 'เจ้าหน้าที่'}</strong>
