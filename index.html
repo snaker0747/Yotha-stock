@@ -4685,16 +4685,49 @@
         remark: sourceVal ? ('ซื้อมาจาก ' + sourceVal) : 'บันทึกผ่านระบบเว็บ'
       };
 
-      Swal.fire({ title: 'กำลังบันทึกรายการพัสดุ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      // Close modal immediately for smooth instant UX
+      const modalEl = document.getElementById('modal-item');
+      const modalInst = bootstrap.Modal.getInstance(modalEl);
+      if (modalInst) modalInst.hide();
+
+      Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
       try {
         const res = await apiCall('saveItem', itemData);
         if (res && res.success) {
-          const modalEl = document.getElementById('modal-item');
-          const modalInst = bootstrap.Modal.getInstance(modalEl);
-          if (modalInst) modalInst.hide();
-          await loadInventoryData();
+          // ⚡ INSTANT IN-MEMORY STATE UPDATE (Zero Latency UI)
+          if (res.item) {
+            const cleanTargetId = String(res.item.id).trim();
+            const idx = itemsData.findIndex(i => String(i.id).trim() === cleanTargetId);
+            if (idx > -1) {
+              itemsData[idx] = { ...itemsData[idx], ...res.item };
+            } else {
+              itemsData.push(res.item);
+            }
+          }
+
+          // Re-render UI immediately (< 20ms)
+          renderInventoryTable();
+          renderStockView();
+          renderMaterialGrid();
+          if (typeof populateStockLedgerItemFilter === 'function') populateStockLedgerItemFilter();
+          if (typeof renderStockLedgerSheet === 'function') renderStockLedgerSheet();
+
+          // Background sync to ensure perfect consistency without blocking user
+          loadInventoryData();
           if (typeof loadStockLogsData === 'function') loadStockLogsData(false);
-          Swal.fire('สำเร็จ', res.msg || 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+
+          Swal.fire({
+            icon: 'success',
+            title: 'บันทึกสำเร็จ!',
+            text: res.msg || 'บันทึกข้อมูลพัสดุเรียบร้อยแล้ว',
+            timer: 1200,
+            showConfirmButton: false
+          });
         } else {
           Swal.fire('ขัดข้อง', (res && res.msg) || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
         }
