@@ -553,24 +553,46 @@
         color: #000000 !important;
       }
 
+      body.printing-ledger .stock-ledger-page,
       body.printing-ledger .stock-ledger-sheet {
-        page-break-after: always;
-        break-after: page;
-        font-family: 'Sarabun', 'TH Sarabun New', sans-serif;
-        color: #000000;
-        background: #ffffff;
-        padding: 2mm 0;
+        page-break-before: auto !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        font-family: 'Sarabun', 'TH Sarabun New', sans-serif !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        padding: 0 0 2mm 0 !important;
         box-shadow: none !important;
         border: none !important;
         margin: 0 auto !important;
         width: 100% !important;
         max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
       }
+      body.printing-ledger .stock-ledger-page:last-child,
       body.printing-ledger .stock-ledger-sheet:last-child {
-        page-break-after: auto;
-        break-after: auto;
+        page-break-after: auto !important;
+        break-after: auto !important;
       }
-    }
+      body.printing-ledger .stock-ledger-table {
+        border: 1.5px solid #000000 !important;
+        border-collapse: collapse !important;
+        width: 100% !important;
+        margin-top: 4px !important;
+        margin-bottom: 0 !important;
+        font-size: 0.82rem !important;
+      }
+      body.printing-ledger .stock-ledger-table th,
+      body.printing-ledger .stock-ledger-table td {
+        border: 1px solid #000000 !important;
+        padding: 2px 4px !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        line-height: 1.25 !important;
+      }
 
     /* Stock Ledger Screen & Table Styles */
     .stock-ledger-preview-card {
@@ -7003,121 +7025,133 @@
       };
     }
 
-    function generateStockLedgerSheetHTML(item, pageNum = 1) {
+    const LEDGER_ROWS_PER_PAGE = 10; // 10 rows per page guarantees exact 1-page fit in A4 Landscape without overflow
+
+    function generateStockLedgerPagesHTML(item) {
       if (!item) return '<div class="text-center p-5 text-muted">ไม่พบข้อมูลพัสดุ</div>';
 
       const ledger = calculateItemStockLedger(item);
-      const txs = ledger.transactions;
+      const txs = ledger.transactions || [];
+      const totalPages = Math.max(1, Math.ceil(txs.length / LEDGER_ROWS_PER_PAGE));
+      let allPagesHtml = '';
 
-      let rowsHtml = '';
-      const minDisplayRows = 15;
-      const totalRowsCount = Math.max(txs.length, minDisplayRows);
+      for (let p = 0; p < totalPages; p++) {
+        const pageNum = p + 1;
+        const pageTxs = txs.slice(p * LEDGER_ROWS_PER_PAGE, (p + 1) * LEDGER_ROWS_PER_PAGE);
 
-      for (let i = 0; i < totalRowsCount; i++) {
-        if (i < txs.length) {
-          const t = txs[i];
-          const recQtyStr = t.receivedQty ? Number(t.receivedQty).toLocaleString() : '';
-          const recPriceStr = t.receivedPrice ? Number(t.receivedPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
-          const issQtyStr = t.issuedQty ? Number(t.issuedQty).toLocaleString() : '';
-          const issPriceStr = t.issuedPrice ? Number(t.issuedPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
-          const balQtyStr = t.balanceQty > 0 ? Number(t.balanceQty).toLocaleString() : (t.balanceQty === 0 ? '-' : t.balanceQty);
-          const balPriceStr = t.balancePrice > 0 ? Number(t.balancePrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : (t.balancePrice === 0 ? '-' : t.balancePrice);
-          const unitPriceStr = t.unitPrice ? Number(t.unitPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
+        let rowsHtml = '';
+        for (let r = 0; r < LEDGER_ROWS_PER_PAGE; r++) {
+          if (r < pageTxs.length) {
+            const t = pageTxs[r];
+            const recQtyStr = t.receivedQty ? Number(t.receivedQty).toLocaleString() : '';
+            const recPriceStr = t.receivedPrice ? Number(t.receivedPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
+            const issQtyStr = t.issuedQty ? Number(t.issuedQty).toLocaleString() : '';
+            const issPriceStr = t.issuedPrice ? Number(t.issuedPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
+            const balQtyStr = t.balanceQty > 0 ? Number(t.balanceQty).toLocaleString() : (t.balanceQty === 0 ? '-' : t.balanceQty);
+            const balPriceStr = t.balancePrice > 0 ? Number(t.balancePrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : (t.balancePrice === 0 ? '-' : t.balancePrice);
+            const unitPriceStr = t.unitPrice ? Number(t.unitPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '';
 
-          rowsHtml += `
-            <tr style="height: 28px;">
-              <td class="text-center col-date" style="white-space: nowrap !important; font-size: 0.86rem; padding: 2px 4px !important;">${t.dateStr || ''}</td>
-              <td class="text-start" style="padding-left:6px !important;">${t.receiveFromPayTo || ''}</td>
-              <td class="text-center">${t.docNo || ''}</td>
-              <td class="text-end" style="padding-right:6px !important;">${unitPriceStr}</td>
-              <td class="text-center">${recQtyStr}</td>
-              <td class="text-end" style="padding-right:6px !important;">${recPriceStr}</td>
-              <td class="text-center">${issQtyStr}</td>
-              <td class="text-end" style="padding-right:6px !important;">${issPriceStr}</td>
-              <td class="text-center fw-semibold">${balQtyStr}</td>
-              <td class="text-end fw-semibold" style="padding-right:6px !important;">${balPriceStr}</td>
-              <td class="text-center" style="font-size:0.84rem; padding:2px 4px !important;">${t.note || ''}</td>
-            </tr>
-          `;
-        } else {
-          // Empty filler row
-          rowsHtml += `
-            <tr style="height: 28px;">
-              <td class="col-date">&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-            </tr>
-          `;
+            rowsHtml += `
+              <tr style="height: 24px;">
+                <td class="text-center col-date" style="white-space: nowrap !important; font-size: 0.84rem; padding: 2px 4px !important;">${t.dateStr || ''}</td>
+                <td class="text-start" style="padding-left:6px !important;">${t.receiveFromPayTo || ''}</td>
+                <td class="text-center">${t.docNo || ''}</td>
+                <td class="text-end" style="padding-right:6px !important;">${unitPriceStr}</td>
+                <td class="text-center">${recQtyStr}</td>
+                <td class="text-end" style="padding-right:6px !important;">${recPriceStr}</td>
+                <td class="text-center">${issQtyStr}</td>
+                <td class="text-end" style="padding-right:6px !important;">${issPriceStr}</td>
+                <td class="text-center fw-semibold">${balQtyStr}</td>
+                <td class="text-end fw-semibold" style="padding-right:6px !important;">${balPriceStr}</td>
+                <td class="text-center" style="font-size:0.82rem; padding:2px 4px !important;">${t.note || ''}</td>
+              </tr>
+            `;
+          } else {
+            // Filler row to maintain exact table height and layout
+            rowsHtml += `
+              <tr style="height: 24px;">
+                <td class="col-date">&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+            `;
+          }
         }
+
+        allPagesHtml += `
+          <div class="stock-ledger-page stock-ledger-sheet stock-ledger-preview-card mb-4">
+            <!-- TOP HEADER (ตรึงหัวข้อทุกหน้า) -->
+            <div class="d-flex justify-content-between align-items-start mb-1" style="color:#000;">
+              <div style="width: 25%;"></div>
+              <div class="text-center" style="width: 50%;">
+                <h4 style="font-family:'Sarabun', sans-serif; font-weight:bold; font-size:1.35rem; margin:0; color:#000; letter-spacing:0.5px;">ใบสรุปผลการเบิกจ่ายพัสดุ</h4>
+              </div>
+              <div class="text-end" style="width: 25%; font-size:0.84rem; line-height:1.35; color:#000; font-family:'Sarabun', sans-serif;">
+                <div>เทศบาลนครระยอง/กองช่าง</div>
+                <div>อำเภอเมือง จังหวัดระยอง</div>
+                <div>หน่วยงาน สำนักช่าง</div>
+              </div>
+            </div>
+
+            <!-- SUB HEADER / MATERIAL METADATA (ตรึงข้อมูลพัสดุทุกหน้า) -->
+            <div class="row mb-2" style="font-size:0.86rem; color:#000; line-height:1.55; font-family:'Sarabun', sans-serif;">
+              <div class="col-7">
+                <div>แผ่นที่ <strong>${pageNum}${totalPages > 1 ? ` / ${totalPages}` : ''}</strong></div>
+                <div>ประเภท <strong>${item.category || 'วัสดุทั่วไป'}</strong></div>
+                <div>ขนาดหรือลักษณะ <strong>${item.description || item.unit || '-'}</strong></div>
+                <div>หน่วยนับ <strong>${item.unit || 'ชิ้น'}</strong></div>
+              </div>
+              <div class="col-5">
+                <div style="visibility:hidden;">&nbsp;</div>
+                <div>ชื่อหรือชนิดวัสดุ <strong>${item.name || '-'}</strong></div>
+                <div>จำนวนอย่างสูง <strong>${item.maxStock ? item.maxStock : '-'}</strong></div>
+                <div>จำนวนอย่างต่ำ <strong>${item.minStock ? item.minStock : '-'}</strong></div>
+              </div>
+            </div>
+
+            <!-- OFFICIAL GOVERNMENT STOCK LEDGER TABLE -->
+            <table class="stock-ledger-table">
+              <thead>
+                <tr>
+                  <th rowspan="2" class="col-date" style="width: 95px; min-width: 90px; white-space: nowrap !important;">วัน/เดือน/ปี</th>
+                  <th rowspan="2" style="width: 210px;">รับจาก-จ่ายให้</th>
+                  <th rowspan="2" style="width: 80px;">เลขที่เอกสาร</th>
+                  <th rowspan="2" style="width: 85px;">ราคาต่อหน่วย<br><span style="font-size:0.75rem; font-weight:normal;">บาท</span></th>
+                  <th colspan="2" style="width: 155px;">รับ</th>
+                  <th colspan="2" style="width: 155px;">จ่าย</th>
+                  <th colspan="2" style="width: 155px;">คงเหลือ</th>
+                  <th rowspan="2" style="width: 85px;">หมายเหตุ</th>
+                </tr>
+                <tr>
+                  <th style="width: 65px;">จำนวน</th>
+                  <th style="width: 90px;">ราคา</th>
+                  <th style="width: 65px;">จำนวน</th>
+                  <th style="width: 90px;">ราคา</th>
+                  <th style="width: 65px;">จำนวน</th>
+                  <th style="width: 90px;">ราคา</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
       }
 
-      return `
-        <div class="stock-ledger-sheet stock-ledger-preview-card mb-4">
-          <!-- TOP HEADER -->
-          <div class="d-flex justify-content-between align-items-start mb-1" style="color:#000;">
-            <div style="width: 25%;"></div>
-            <div class="text-center" style="width: 50%;">
-              <h4 style="font-family:'Sarabun', sans-serif; font-weight:bold; font-size:1.45rem; margin:0; color:#000; letter-spacing:0.5px;">ใบสรุปผลการเบิกจ่ายพัสดุ</h4>
-            </div>
-            <div class="text-end" style="width: 25%; font-size:0.88rem; line-height:1.4; color:#000; font-family:'Sarabun', sans-serif;">
-              <div>เทศบาลนครระยอง/กองช่าง</div>
-              <div>อำเภอเมือง จังหวัดระยอง</div>
-              <div>หน่วยงาน สำนักช่าง</div>
-            </div>
-          </div>
+      return allPagesHtml;
+    }
 
-          <!-- SUB HEADER / MATERIAL METADATA (MATCHING OFFICIAL SAMPLE) -->
-          <div class="row mb-2" style="font-size:0.9rem; color:#000; line-height:1.65; font-family:'Sarabun', sans-serif;">
-            <div class="col-7">
-              <div>แผ่นที่ <strong>${pageNum}</strong></div>
-              <div>ประเภท <strong>${item.category || 'วัสดุทั่วไป'}</strong></div>
-              <div>ขนาดหรือลักษณะ <strong>${item.description || item.unit || '-'}</strong></div>
-              <div>หน่วยนับ <strong>${item.unit || 'ชิ้น'}</strong></div>
-            </div>
-            <div class="col-5">
-              <div style="visibility:hidden;">&nbsp;</div>
-              <div>ชื่อหรือชนิดวัสดุ <strong>${item.name || '-'}</strong></div>
-              <div>จำนวนอย่างสูง <strong>${item.maxStock ? item.maxStock : '-'}</strong></div>
-              <div>จำนวนอย่างต่ำ <strong>${item.minStock ? item.minStock : '-'}</strong></div>
-            </div>
-          </div>
-
-          <!-- OFFICIAL GOVERNMENT STOCK LEDGER TABLE -->
-          <table class="stock-ledger-table">
-            <thead>
-              <tr>
-                <th rowspan="2" class="col-date" style="width: 100px; min-width: 95px; white-space: nowrap !important;">วัน/เดือน/ปี</th>
-                <th rowspan="2" style="width: 205px;">รับจาก-จ่ายให้</th>
-                <th rowspan="2" style="width: 80px;">เลขที่เอกสาร</th>
-                <th rowspan="2" style="width: 85px;">ราคาต่อหน่วย<br><span style="font-size:0.78rem; font-weight:normal;">บาท</span></th>
-                <th colspan="2" style="width: 155px;">รับ</th>
-                <th colspan="2" style="width: 155px;">จ่าย</th>
-                <th colspan="2" style="width: 155px;">คงเหลือ</th>
-                <th rowspan="2" style="width: 80px;">หมายเหตุ</th>
-              </tr>
-              <tr>
-                <th style="width: 65px;">จำนวน</th>
-                <th style="width: 90px;">ราคา</th>
-                <th style="width: 65px;">จำนวน</th>
-                <th style="width: 90px;">ราคา</th>
-                <th style="width: 65px;">จำนวน</th>
-                <th style="width: 90px;">ราคา</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-        </div>
-      `;
+    function generateStockLedgerSheetHTML(item, pageNum = 1) {
+      return generateStockLedgerPagesHTML(item);
     }
 
     function renderStockLedgerSheet() {
@@ -7133,7 +7167,7 @@
         container.innerHTML = '<div class="glass-card p-5 text-center text-muted">ไม่พบข้อมูลพัสดุที่เลือก</div>';
         return;
       }
-      container.innerHTML = generateStockLedgerSheetHTML(item, 1);
+      container.innerHTML = generateStockLedgerPagesHTML(item);
     }
 
     function printStockLedgerSingle() {
@@ -7149,7 +7183,7 @@
       if (!printArea) { window.print(); return; }
 
       setPrintPageOrientation('landscape');
-      printArea.innerHTML = generateStockLedgerSheetHTML(item, 1);
+      printArea.innerHTML = generateStockLedgerPagesHTML(item);
       document.body.classList.add('printing-ledger');
       setTimeout(() => {
         window.print();
@@ -7171,7 +7205,7 @@
 
       Swal.fire({
         title: 'ยืนยันการพิมพ์ต่อเนื่อง',
-        text: `ต้องการสั่งพิมพ์ใบสรุปผลการเบิกจ่ายพัสดุทั้งหมด ${items.length} รายการ (แยก 1 รายการ ต่อ 1 หน้า A4 แนวนอน) หรือไม่?`,
+        text: `ต้องการสั่งพิมพ์ใบสรุปผลการเบิกจ่ายพัสดุทั้งหมด ${items.length} รายการ (แยก 1 รายการ ต่อ 1 หน้า A4 แนวนอน พร้อมตรึงหัวข้อทุกหน้า) หรือไม่?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'พิมพ์ทันที',
@@ -7183,14 +7217,8 @@
 
           setPrintPageOrientation('landscape');
           let fullHtml = '';
-          items.forEach((item, idx) => {
-            const isLast = idx === items.length - 1;
-            const sheetHtml = generateStockLedgerSheetHTML(item, idx + 1);
-            fullHtml += `
-              <div class="${isLast ? '' : 'page-break-ledger'}">
-                ${sheetHtml}
-              </div>
-            `;
+          items.forEach((item) => {
+            fullHtml += generateStockLedgerPagesHTML(item);
           });
 
           printArea.innerHTML = fullHtml;
