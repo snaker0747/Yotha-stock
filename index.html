@@ -5960,7 +5960,7 @@
             <td class="text-center"><strong>${it.id || '-'}</strong></td>
             <td><strong>${it.name}</strong></td>
             <td>${it.category || '-'}</td>
-            <td class="text-center"><span style="color:#ff3b30;font-weight:bold;" title="Min">Min: ${it.minVal}</span> / <span style="color:#007aff;font-weight:bold;" title="Max">Max: ${it.maxVal}</span></td>
+            <td class="text-center" style="white-space:nowrap;"><span style="color:#ff3b30;font-weight:bold;" title="เกณฑ์ต่ำสุด (Min)">${it.minVal}</span> / <span style="color:#007aff;font-weight:bold;" title="เกณฑ์สูงสุด (Max)">${it.maxVal}</span></td>
             <td class="text-center" style="font-weight:bold; ${it.rem === 0 ? 'color:#cc0000;' : (it.rem <= it.minVal ? 'color:#c47a00;' : 'color:#1a7a3a;')}">${it.rem.toLocaleString()}</td>
             <td class="text-center">${reorderDisplay}</td>
             <td class="text-end">฿${it.price.toLocaleString()}</td>
