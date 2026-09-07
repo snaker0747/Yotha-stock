@@ -533,6 +533,13 @@
         background: #ffffff !important;
         margin: 0 !important;
         padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      body.printing-report img,
+      body.printing-report .print-chart-img {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       /* STOCK LEDGER PRINT: Show ONLY #print-ledger-area in A4 LANDSCAPE */
@@ -5369,7 +5376,37 @@
       if (!reportBody || !printArea) { window.print(); return; }
 
       setPrintPageOrientation('landscape');
-      printArea.innerHTML = reportBody.innerHTML;
+
+      // Deep clone report body DOM
+      const clone = reportBody.cloneNode(true);
+
+      // Convert all live rendered <canvas> charts into <img> tags with high-res PNG data
+      const origCanvases = reportBody.querySelectorAll('canvas');
+      const cloneCanvases = clone.querySelectorAll('canvas');
+
+      origCanvases.forEach((origCanvas, idx) => {
+        try {
+          const cloneCanvas = cloneCanvases[idx];
+          if (cloneCanvas && origCanvas) {
+            const dataUrl = origCanvas.toDataURL('image/png', 1.0);
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.maxHeight = '210px';
+            img.style.objectFit = 'contain';
+            img.style.display = 'block';
+            img.style.margin = '0 auto';
+            img.className = 'print-chart-img';
+            cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
+          }
+        } catch (e) {
+          console.error('Error copying chart canvas to print image:', e);
+        }
+      });
+
+      printArea.innerHTML = '';
+      printArea.appendChild(clone);
       document.body.classList.add('printing-report');
       setTimeout(() => {
         window.print();
@@ -5377,7 +5414,7 @@
           document.body.classList.remove('printing-report');
           printArea.innerHTML = '';
         }, 1500);
-      }, 50);
+      }, 100);
     }
 
     function downloadCSVFile(csvContent, filename) {
