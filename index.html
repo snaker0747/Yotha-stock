@@ -5399,8 +5399,8 @@
       let csv = '\uFEFF'; // UTF-8 BOM for Thai support in MS Excel
 
       if (currentReportType === 'stock') {
-        const filterCat = document.getElementById('report-filter-stock-cat')?.value || 'ALL';
-        const filterStatus = document.getElementById('report-filter-stock-status')?.value || 'ALL';
+        const filterStatus = document.getElementById('report-stock-filter-status')?.value || 'REORDER_ONLY';
+        const filterCat = document.getElementById('report-stock-filter-cat')?.value || 'ALL';
 
         let validItems = (itemsData || []).filter(it => {
           if (!it || !it.name || !it.name.trim() || it.name === '-' || !it.id || !it.id.trim() || it.id === 'null') return false;
@@ -5408,32 +5408,40 @@
         });
 
         let enriched = validItems.map(it => {
-          const qty = it.quantity || 0;
+          const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
           const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
           const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
-          const isCritical = qty === 0;
-          const isLow = qty <= minVal;
-          const price = Number(it.price) || 0;
+          const isCritical = rem === 0;
+          const isLow = rem <= minVal;
+          const price = Number(it.unitPrice != null ? it.unitPrice : (it.price || 0)) || 0;
           let suggestedReorder = 0;
           if (isCritical || isLow) {
-            suggestedReorder = Math.max(0, maxVal - qty);
+            suggestedReorder = Math.max(0, maxVal - rem);
           }
           const reorderCost = suggestedReorder * price;
           let statusCode = 'HEALTHY';
-          if (isCritical) statusCode = 'CRITICAL';
-          else if (isLow) statusCode = 'WARNING';
+          let statusLabel = 'ปกติ';
+          if (isCritical) {
+            statusCode = 'CRITICAL';
+            statusLabel = 'หมดคลัง';
+          } else if (isLow) {
+            statusCode = 'WARNING';
+            statusLabel = 'ต่ำกว่าเกณฑ์';
+          }
 
           return {
             id: it.id || '',
             name: it.name || '',
             category: it.category || '',
-            qty,
+            unit: it.unit || 'ชิ้น',
+            rem,
             minVal,
             maxVal,
             suggestedReorder,
             price,
             reorderCost,
-            statusCode
+            statusCode,
+            statusLabel
           };
         });
 
@@ -5447,14 +5455,14 @@
 
         displayItems.sort((a, b) => {
           const order = { 'CRITICAL': 1, 'WARNING': 2, 'HEALTHY': 3 };
-          return order[a.statusCode] - order[b.statusCode] || a.qty - b.qty;
+          return order[a.statusCode] - order[b.statusCode] || a.rem - b.rem;
         });
 
-        csv += 'ลำดับ,รหัสพัสดุ,ชื่อพัสดุ,หมวดหมู่,เกณฑ์ขั้นต่ำ (Min),เกณฑ์สูงสุด (Max),คงเหลือปัจจุบัน,เสนอขอเบิกเติม,ราคาต่อหน่วย (บาท),ประมาณการงบประมาณ (บาท),หมายเหตุ\n';
+        csv += 'ลำดับ,รหัสพัสดุ,ชื่อหรือชนิดพัสดุ,หมวดหมู่,หน่วยนับ,เกณฑ์ขั้นต่ำ (Min),เกณฑ์สูงสุด (Max),คงเหลือปัจจุบัน,เสนอขอเบิกเติม,ราคาต่อหน่วย (บาท),ประมาณการงบประมาณ (บาท),สถานะ,หมายเหตุ\n';
 
         let sumQty = 0, sumReorder = 0, sumCost = 0;
         displayItems.forEach((it, idx) => {
-          sumQty += it.qty;
+          sumQty += it.rem;
           sumReorder += it.suggestedReorder;
           sumCost += it.reorderCost;
           const row = [
@@ -5462,18 +5470,20 @@
             `"${(it.id || '').replace(/"/g, '""')}"`,
             `"${(it.name || '').replace(/"/g, '""')}"`,
             `"${(it.category || '').replace(/"/g, '""')}"`,
+            `"${(it.unit || '').replace(/"/g, '""')}"`,
             it.minVal,
             it.maxVal,
-            it.qty,
+            it.rem,
             it.suggestedReorder,
             it.price,
             it.reorderCost,
+            `"${it.statusLabel}"`,
             '""'
           ];
           csv += row.join(',') + '\n';
         });
 
-        csv += `\n"รวมทั้งสิ้น (${displayItems.length} รายการ)",,,,,,"${sumQty}","${sumReorder}",,"${sumCost}",""\n`;
+        csv += `\n"รวมทั้งสิ้น (${displayItems.length} รายการ)",,,,,,,,"${sumQty}","${sumReorder}",,"${sumCost}","",""\n`;
         downloadCSVFile(csv, `รายงานสถานะพัสดุ_InStock_${dateFileStr}_${timeFileStr}.csv`);
 
       } else if (currentReportType === 'history') {
@@ -5489,7 +5499,7 @@
           return true;
         });
 
-        csv += 'ลำดับ,เลขที่ใบเบิก,วันเวลาเบิก,ผู้ขอเบิก,ฝ่าย/กอง,วัตถุประสงค์,รายการพัสดุ,จำนวนเบิกรวม,มูลค่ารวม (บาท),สถานะ\n';
+        csv += 'ลำดับ,เลขที่ใบเบิก,วันเวลาเบิก,ผู้ขอเบิก,ฝ่าย/กอง,วัตถุประสงค์,รายการพัสดุที่เบิก,จำนวนเบิกรวม (ชิ้น),มูลค่ารวม (บาท),สถานะ\n';
 
         let sumQty = 0, sumVal = 0;
         filtered.forEach((r, idx) => {
@@ -5499,24 +5509,27 @@
           let totalQty = 0;
           let totalCost = 0;
           if (Array.isArray(r.items)) {
-            itemsListStr = r.items.map(i => `${i.name || i.itemId} (${i.qty} ชิ้น)`).join('; ');
+            itemsListStr = r.items.map(i => `${i.name || i.itemId} (${i.qty} ${i.unit || 'ชิ้น'})`).join('; ');
             totalQty = r.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
             totalCost = r.items.reduce((s, i) => s + ((Number(i.qty) || 0) * (Number(i.price) || 0)), 0);
           }
           sumQty += totalQty;
           sumVal += totalCost;
 
+          const requester = r.userName || r.requesterName || '-';
+          const department = r.dept || r.department || r.userRole || '-';
+
           const row = [
             idx + 1,
             `"${(r.id || '').replace(/"/g, '""')}"`,
             `"${dtStr.replace(/"/g, '""')}"`,
-            `"${(r.requesterName || '').replace(/"/g, '""')}"`,
-            `"${(r.department || '').replace(/"/g, '""')}"`,
+            `"${requester.replace(/"/g, '""')}"`,
+            `"${department.replace(/"/g, '""')}"`,
             `"${(r.purpose || '').replace(/"/g, '""')}"`,
             `"${itemsListStr.replace(/"/g, '""')}"`,
             totalQty,
             totalCost,
-            `"${(r.status || '').replace(/"/g, '""')}"`
+            `"${(r.status || 'อนุมัติแล้ว').replace(/"/g, '""')}"`
           ];
           csv += row.join(',') + '\n';
         });
@@ -5533,7 +5546,7 @@
         let filtered = (stockLogsData || []).filter(l => {
           if (!l) return false;
           if (cat !== 'ALL' && l.category !== cat) return false;
-          if (action !== 'ALL' && l.actionType !== action) return false;
+          if (action !== 'ALL' && (l.actionType !== action && l.action !== action)) return false;
           const lDate = new Date(l.timestamp);
           if (!isNaN(lDate.getTime())) {
             if (from && lDate < new Date(from + 'T00:00:00')) return false;
@@ -5547,6 +5560,10 @@
         filtered.forEach((l, idx) => {
           const dt = new Date(l.timestamp);
           const dtStr = isNaN(dt.getTime()) ? (l.timestamp || '') : dt.toLocaleString('th-TH');
+          const qtyChg = Number(l.qtyChange != null ? l.qtyChange : (l.qty || 0)) || 0;
+          const unitPrice = Number(l.unitPrice) || 0;
+          const totalVal = Number(l.totalValue != null ? l.totalValue : (qtyChg * unitPrice)) || 0;
+
           const row = [
             idx + 1,
             `"${(l.id || '').replace(/"/g, '""')}"`,
@@ -5554,13 +5571,13 @@
             `"${(l.itemId || '').replace(/"/g, '""')}"`,
             `"${(l.itemName || '').replace(/"/g, '""')}"`,
             `"${(l.category || '').replace(/"/g, '""')}"`,
-            `"${(l.actionType || '').replace(/"/g, '""')}"`,
-            l.qtyChange || 0,
+            `"${(l.actionType || l.action || '').replace(/"/g, '""')}"`,
+            qtyChg,
             l.balanceQty || 0,
-            l.unitPrice || 0,
-            l.totalValue || 0,
-            `"${(l.operatorName || '').replace(/"/g, '""')}"`,
-            `"${(l.remark || '').replace(/"/g, '""')}"`
+            unitPrice,
+            totalVal,
+            `"${(l.operatorName || l.userName || '-').replace(/"/g, '""')}"`,
+            `"${(l.remark || l.note || '').replace(/"/g, '""')}"`
           ];
           csv += row.join(',') + '\n';
         });
@@ -5568,20 +5585,70 @@
         downloadCSVFile(csv, `รายงานประวัตินำเข้าและเพิ่มพัสดุ_${dateFileStr}_${timeFileStr}.csv`);
 
       } else {
-        // Executive Report
+        // Executive Report (รายงานสรุปภาพรวมสำหรับผู้บริหาร)
         const analytics = calculateExecutiveAnalytics();
-        csv += 'หมวดหมู่,จำนวนรายการพัสดุ,จำนวนคงเหลือรวม,มูลค่ารวม (บาท),จำนวนรายการที่ต้องเติม,งบประมาณที่ต้องเติม (บาท)\n';
-        Object.entries(analytics.catMap || {}).forEach(([cat, d]) => {
+        const catEntries = Object.entries(analytics.catMap || {});
+        let totalItemsAll = 0, totalRecAll = 0, totalOutAll = 0, totalRemAll = 0, totalValAll = 0;
+
+        csv += '1. สรุปปริมาณและมูลค่าพัสดุคงคลังจำแนกตามหมวดหมู่\n';
+        csv += 'ลำดับ,หมวดหมู่พัสดุ,จำนวนรายการ,รับเข้าสะสม,เบิกจ่ายสะสม,คงเหลือสุทธิ,มูลค่าคงคลัง (บาท),สัดส่วน\n';
+
+        catEntries.forEach(([cat, data], idx) => {
+          totalItemsAll += data.count;
+          totalRecAll += data.received;
+          totalOutAll += data.checkedOut;
+          totalRemAll += data.remaining;
+          totalValAll += data.totalVal;
+
+          const valPercent = analytics.totalStockVal > 0 ? ((data.totalVal / analytics.totalStockVal) * 100).toFixed(1) + '%' : '0.0%';
           const row = [
+            idx + 1,
             `"${cat.replace(/"/g, '""')}"`,
-            d.count || 0,
-            d.qty || 0,
-            d.val || 0,
-            d.needReorderCount || 0,
-            d.reorderBudget || 0
+            data.count,
+            data.received,
+            data.checkedOut,
+            data.remaining,
+            data.totalVal,
+            `"${valPercent}"`
           ];
           csv += row.join(',') + '\n';
         });
+
+        csv += `"","รวมทั้งสิ้น (${catEntries.length} หมวดหมู่)","${totalItemsAll}","${totalRecAll}","${totalOutAll}","${totalRemAll}","${totalValAll}","100.0%"\n\n`;
+
+        // Section 2: Top Requisitions
+        if (analytics.topRequisitioned && analytics.topRequisitioned.length > 0) {
+          csv += '2. สถิติพัสดุที่มีการเบิกจ่ายสูงสุด (Top 5)\n';
+          csv += 'อันดับ,รายการพัสดุ,ความถี่ในการเบิก (ครั้ง),ปริมาณเบิกรวม (ชิ้น),มูลค่าการเบิกรวม (บาท)\n';
+          analytics.topRequisitioned.forEach((it, idx) => {
+            const row = [
+              idx + 1,
+              `"${(it.name || '').replace(/"/g, '""')}"`,
+              it.count,
+              it.qty,
+              it.totalVal
+            ];
+            csv += row.join(',') + '\n';
+          });
+          csv += '\n';
+        }
+
+        // Section 3: Purposes
+        if (analytics.topPurposes && analytics.topPurposes.length > 0) {
+          csv += '3. สถิติการเบิกจ่ายจำแนกตามวัตถุประสงค์การใช้งาน\n';
+          csv += 'ลำดับ,วัตถุประสงค์,ความถี่ (ครั้ง),สัดส่วน\n';
+          analytics.topPurposes.forEach((p, idx) => {
+            const percent = analytics.totalReqTransactions > 0 ? ((p.count / analytics.totalReqTransactions) * 100).toFixed(1) + '%' : '0.0%';
+            const row = [
+              idx + 1,
+              `"${(p.purpose || '').replace(/"/g, '""')}"`,
+              p.count,
+              `"${percent}"`
+            ];
+            csv += row.join(',') + '\n';
+          });
+        }
+
         downloadCSVFile(csv, `รายงานสรุปภาพรวมผู้บริหาร_${dateFileStr}_${timeFileStr}.csv`);
       }
     }
