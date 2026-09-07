@@ -3211,7 +3211,8 @@
       const catFilter = document.getElementById('stockview-filter-category')?.value || 'ALL';
 
       // 1. Enrich all items with stock metrics
-      const enriched = itemsData.map(it => {
+      const validItems = (itemsData || []).filter(it => it && it.name && it.name.trim() && it.name !== '-' && it.id && it.id.trim() && it.id !== 'null');
+      const enriched = validItems.map(it => {
         const qty = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
         const price = Number(it.unitPrice) || 0;
         const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
@@ -3459,6 +3460,7 @@
       const container = document.getElementById('material-cards-container');
       
       let filtered = itemsData.filter(item => {
+        if (!item || !item.name || !item.name.trim() || item.name === '-' || !item.id || !item.id.trim() || item.id === 'null') return false;
         const matchCat = (cat === 'ALL' || item.category === cat);
         const matchSearch = (item.name.toLowerCase().includes(search) || item.id.toLowerCase().includes(search));
         return matchCat && matchSearch;
@@ -4365,6 +4367,7 @@
       const statusFilter = document.getElementById('inventory-filter-status')?.value || 'ALL';
 
       let filtered = itemsData.filter(it => {
+        if (!it || !it.name || !it.name.trim() || it.name === '-' || !it.id || !it.id.trim() || it.id === 'null') return false;
         // 1. หมวดหมู่
         if (catFilter !== 'ALL' && it.category !== catFilter) return false;
 
@@ -4655,9 +4658,10 @@
     }
 
     async function deleteItemAction(itemId) {
+      const cleanId = (itemId || '').trim();
       const confirm = await Swal.fire({ 
         title: 'ยืนยันการลบ?', 
-        text: (itemId && itemId.trim()) ? `ต้องการลบรายการพัสดุรหัส ${itemId} หรือไม่?` : 'ต้องการลบแถวที่ไม่มีข้อมูลออกจากระบบหรือไม่?', 
+        text: (cleanId && cleanId !== 'null' && cleanId !== 'undefined') ? `ต้องการลบรายการพัสดุรหัส ${cleanId} หรือไม่?` : 'ต้องการล้างแถวที่ไม่มีข้อมูลออกจากระบบหรือไม่?', 
         icon: 'warning', 
         showCancelButton: true, 
         confirmButtonText: 'ลบรายการ', 
@@ -4669,13 +4673,20 @@
       try {
         const opId = currentUser ? currentUser.id : '';
         const opName = currentUser ? currentUser.name : 'เจ้าหน้าที่ธุรการ';
-        const res = await apiCall('deleteItem', (itemId || '').trim(), opId, opName);
+        const res = await apiCall('deleteItem', cleanId, opId, opName);
         if (res && res.success) {
-          await loadInventoryData();
+          await fetchAllDataFast(false);
+          renderInventoryTable();
+          renderStockView();
+          renderMaterialGrid();
           if (typeof loadStockLogsData === 'function') loadStockLogsData(false);
           Swal.fire('ลบสำเร็จ', res.msg || 'ลบรายการเรียบร้อยแล้ว', 'success');
         } else {
-          Swal.fire('ขัดข้อง', (res && res.msg) || 'ไม่สามารถลบรายการได้', 'error');
+          await fetchAllDataFast(false);
+          renderInventoryTable();
+          renderStockView();
+          renderMaterialGrid();
+          Swal.fire('แจ้งเตือน', (res && res.msg) || 'อัปเดตข้อมูลแล้ว', 'info');
         }
       } catch (e) {
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถลบรายการได้: ' + (e.message || e), 'error');
