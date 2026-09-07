@@ -5759,6 +5759,34 @@
             </table>
           </div>
 
+          <!-- SECTION 1.1: VISUAL BAR CHARTS (มูลค่าและปริมาณคงคลังตามหมวดหมู่) -->
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <div class="p-3 border rounded-3" style="background:#ffffff;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold" style="font-size:0.88rem; color:#1e293b;">
+                    <i class="fas fa-chart-bar text-primary me-2"></i>กราฟแสดงมูลค่าคงคลังตามหมวดหมู่ (บาท)
+                  </span>
+                </div>
+                <div style="height: 210px; position: relative;">
+                  <canvas id="report-exec-chart-val"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 border rounded-3" style="background:#ffffff;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold" style="font-size:0.88rem; color:#1e293b;">
+                    <i class="fas fa-cubes text-success me-2"></i>กราฟแสดงปริมาณคงเหลือตามหมวดหมู่ (ชิ้น)
+                  </span>
+                </div>
+                <div style="height: 210px; position: relative;">
+                  <canvas id="report-exec-chart-qty"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- SECTION 2 & 3 (2 COLUMNS IN PRINT/SCREEN) -->
           <div class="row g-3 mb-4">
             <!-- Top Requisitioned Materials -->
@@ -5818,7 +5846,141 @@
       `;
 
       const bodyEl = document.getElementById('report-modal-body');
-      if (bodyEl) bodyEl.innerHTML = reportHTML;
+      if (bodyEl) {
+        bodyEl.innerHTML = reportHTML;
+        setTimeout(() => renderExecutiveReportCharts(analytics), 50);
+      }
+    }
+
+    let reportExecValChart = null;
+    let reportExecQtyChart = null;
+
+    function renderExecutiveReportCharts(analytics) {
+      if (!analytics) analytics = calculateExecutiveAnalytics();
+
+      const catLabels = Object.keys(analytics.catMap || {}).map(c => {
+        return c.length > 18 ? c.substring(0, 16) + '...' : c;
+      });
+      const catVals = Object.values(analytics.catMap || {}).map(c => c.totalVal || 0);
+      const catQtys = Object.values(analytics.catMap || {}).map(c => c.remaining || 0);
+
+      const barColorsVal = [
+        'rgba(0, 122, 255, 0.85)',
+        'rgba(52, 199, 89, 0.85)',
+        'rgba(255, 149, 0, 0.85)',
+        'rgba(255, 59, 48, 0.85)',
+        'rgba(88, 86, 214, 0.85)',
+        'rgba(175, 82, 222, 0.85)',
+        'rgba(90, 200, 250, 0.85)',
+        'rgba(255, 45, 85, 0.85)'
+      ];
+
+      const barColorsQty = [
+        'rgba(52, 199, 89, 0.85)',
+        'rgba(0, 122, 255, 0.85)',
+        'rgba(255, 149, 0, 0.85)',
+        'rgba(88, 86, 214, 0.85)',
+        'rgba(175, 82, 222, 0.85)',
+        'rgba(255, 59, 48, 0.85)',
+        'rgba(90, 200, 250, 0.85)',
+        'rgba(255, 45, 85, 0.85)'
+      ];
+
+      // Chart 1: Value Bar Chart
+      const valCanvas = document.getElementById('report-exec-chart-val');
+      if (valCanvas) {
+        const valCtx = valCanvas.getContext('2d');
+        if (reportExecValChart) reportExecValChart.destroy();
+        reportExecValChart = new Chart(valCtx, {
+          type: 'bar',
+          data: {
+            labels: catLabels,
+            datasets: [{
+              label: 'มูลค่าคงคลัง (บาท)',
+              data: catVals,
+              backgroundColor: barColorsVal.slice(0, catLabels.length),
+              borderRadius: 6,
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    return 'มูลค่า: ฿' + Number(ctx.raw || 0).toLocaleString() + ' บาท';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(v) {
+                    return '฿' + (v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v));
+                  },
+                  font: { size: 10 }
+                }
+              },
+              x: {
+                ticks: { font: { size: 10 } }
+              }
+            }
+          }
+        });
+      }
+
+      // Chart 2: Quantity Bar Chart
+      const qtyCanvas = document.getElementById('report-exec-chart-qty');
+      if (qtyCanvas) {
+        const qtyCtx = qtyCanvas.getContext('2d');
+        if (reportExecQtyChart) reportExecQtyChart.destroy();
+        reportExecQtyChart = new Chart(qtyCtx, {
+          type: 'bar',
+          data: {
+            labels: catLabels,
+            datasets: [{
+              label: 'คงเหลือ (ชิ้น)',
+              data: catQtys,
+              backgroundColor: barColorsQty.slice(0, catLabels.length),
+              borderRadius: 6,
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    return 'คงเหลือ: ' + Number(ctx.raw || 0).toLocaleString() + ' ชิ้น';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(v) {
+                    return (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) + ' ชิ้น';
+                  },
+                  font: { size: 10 }
+                }
+              },
+              x: {
+                ticks: { font: { size: 10 } }
+              }
+            }
+          }
+        });
+      }
     }
 
     function openStockLogReportModal() {
