@@ -1354,12 +1354,12 @@
       }
     }
 
-    /* ================= BUDGET PLANNER FLOATING DOCK & STICKY TABLE HEADER ================= */
+    /* ================= BUDGET PLANNER FLOATING DOCK (SINGLE ROW) ================= */
     .budget-hud-card {
       background: rgba(255, 255, 255, 0.75);
       border: 1px solid rgba(0, 0, 0, 0.06);
       border-radius: 16px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       transition: all 0.25s ease;
     }
     body.dark-theme .budget-hud-card {
@@ -1370,35 +1370,21 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
     }
-    .budget-table-sticky-header th {
-      position: sticky;
-      top: 76px;
-      z-index: 10;
-      background: #ffffff !important;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-      border-bottom: 2px solid #dee2e6 !important;
-    }
-    body.dark-theme .budget-table-sticky-header th {
-      background: #1c2333 !important;
-      color: #e8edf8 !important;
-      border-bottom-color: rgba(255, 255, 255, 0.12) !important;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
-    }
     .budget-floating-dock {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       width: calc(100% - 32px);
-      max-width: 1240px;
+      max-width: 1320px;
       z-index: 1050;
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
       border: 1.5px solid rgba(0, 122, 255, 0.25);
-      border-radius: 20px;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 122, 255, 0.12);
-      padding: 10px 18px;
+      border-radius: 18px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 122, 255, 0.12);
+      padding: 8px 14px;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       animation: budgetDockSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -1411,22 +1397,52 @@
       border-color: rgba(255, 255, 255, 0.15);
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
     }
+    .budget-dock-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: nowrap;
+      gap: 8px;
+      width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .budget-dock-inner::-webkit-scrollbar {
+      display: none;
+    }
+    .budget-dock-metrics {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 6px;
+      flex-shrink: 1;
+    }
+    .budget-dock-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
     .budget-dock-pill {
       display: inline-flex;
       align-items: center;
       background: rgba(0, 0, 0, 0.04);
-      padding: 6px 12px;
-      border-radius: 12px;
-      font-size: 0.85rem;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.82rem;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     body.dark-theme .budget-dock-pill {
       background: rgba(255, 255, 255, 0.06);
     }
     .budget-dock-pill .dock-label {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: #6c757d;
-      margin-right: 6px;
+      margin-right: 5px;
       font-weight: 500;
     }
     body.dark-theme .budget-dock-pill .dock-label {
@@ -1434,27 +1450,24 @@
     }
     .budget-dock-pill .dock-val {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
     }
     @media (max-width: 991px) {
-      .budget-table-sticky-header th {
-        top: 60px;
-      }
       .budget-floating-dock {
         bottom: 74px; /* Above mobile bottom nav */
         width: calc(100% - 16px);
-        padding: 8px 12px;
-        border-radius: 16px;
+        padding: 6px 10px;
+        border-radius: 14px;
       }
       .budget-dock-pill {
         padding: 4px 8px;
-        font-size: 0.76rem;
+        font-size: 0.74rem;
       }
       .budget-dock-pill .dock-val {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
       }
       .budget-dock-pill .dock-label {
-        font-size: 0.72rem;
+        font-size: 0.7rem;
       }
     }
   </style>
@@ -2278,34 +2291,34 @@
               </div>
             </div>
 
-            <!-- Budget KPI & Summary Panel (Spacious Non-Sticky Layout) -->
+            <!-- Budget KPI & Summary Panel (Clean Single-Row Cards) -->
             <div class="glass-card p-3 p-md-4 mb-3 mb-md-4" id="budget-kpi-summary-panel">
-              <!-- 4 Live KPI Cards -->
-              <div class="row g-2 g-md-3 align-items-stretch mb-3">
-                <div class="col-6 col-lg-3">
+              <!-- 4 Live KPI Cards (Single Row) -->
+              <div class="row g-2 g-md-3 row-cols-2 row-cols-lg-4 align-items-stretch mb-3">
+                <div class="col">
                   <div class="budget-hud-card text-center h-100">
-                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.82rem;">วงเงินงบประมาณที่ตั้งไว้</span>
+                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.8rem;">วงเงินงบประมาณที่ตั้งไว้</span>
                     <h3 class="fw-bold text-primary my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-total">฿0.00</h3>
                     <span class="badge badge-ios badge-ios-primary py-0.5 px-2" style="font-size: 0.72rem;">งบประมาณรวม</span>
                   </div>
                 </div>
-                <div class="col-6 col-lg-3">
+                <div class="col">
                   <div class="budget-hud-card text-center h-100">
-                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.82rem;">ยอดประมาณการจัดซื้อ</span>
+                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.8rem;">ยอดประมาณการจัดซื้อ</span>
                     <h3 class="fw-bold text-info my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-spent">฿0.00</h3>
                     <span class="badge badge-ios badge-ios-info py-0.5 px-2" id="budget-kpi-spent-percent" style="font-size: 0.72rem;">0% ของงบ</span>
                   </div>
                 </div>
-                <div class="col-6 col-lg-3">
+                <div class="col">
                   <div class="budget-hud-card text-center h-100" id="budget-kpi-remaining-card">
-                    <span class="small text-muted-ios d-block mb-1" id="budget-kpi-remaining-label" style="font-size: 0.82rem;">งบประมาณคงเหลือ</span>
+                    <span class="small text-muted-ios d-block mb-1" id="budget-kpi-remaining-label" style="font-size: 0.8rem;">งบประมาณคงเหลือ</span>
                     <h3 class="fw-bold text-success my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-remaining">฿0.00</h3>
                     <span class="badge badge-ios badge-ios-success py-0.5 px-2" id="budget-kpi-remaining-badge" style="font-size: 0.72rem;">พร้อมใช้</span>
                   </div>
                 </div>
-                <div class="col-6 col-lg-3">
+                <div class="col">
                   <div class="budget-hud-card text-center h-100">
-                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.82rem;">รายการที่เลือกซื้อ</span>
+                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.8rem;">รายการที่เลือกซื้อ</span>
                     <h3 class="fw-bold text-dark-emphasis my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-count">0 / 0</h3>
                     <span class="badge badge-ios badge-ios-secondary py-0.5 px-2" id="budget-kpi-units-badge" style="font-size: 0.72rem;">0 ชิ้น</span>
                   </div>
@@ -2357,7 +2370,7 @@
             <!-- Interactive Procurement Items Table -->
             <div class="glass-card p-3 p-md-4">
               <div class="table-responsive">
-                <table class="table table-ios w-100 align-middle budget-table-sticky-header" id="budget-planner-table">
+                <table class="table table-ios w-100 align-middle" id="budget-planner-table">
                   <thead>
                     <tr>
                       <th style="width: 44px; text-align: center;">
@@ -2385,11 +2398,11 @@
               </div>
             </div>
 
-            <!-- Floating Smart Budget Summary Dock (Always visible when scrolling) -->
+            <!-- Floating Smart Budget Summary Dock (Single Row Layout) -->
             <div id="budget-floating-dock" class="budget-floating-dock">
-              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100">
-                <!-- 4 Live Metric Pills -->
-                <div class="d-flex align-items-center flex-wrap gap-2 gap-md-3">
+              <div class="budget-dock-inner">
+                <!-- 4 Live Metric Pills (Single Row) -->
+                <div class="budget-dock-metrics">
                   <!-- Metric 1: วงเงินงบประมาณ -->
                   <div class="budget-dock-pill">
                     <span class="dock-label"><i class="fas fa-wallet text-primary me-1"></i>งบประมาณ:</span>
@@ -2397,31 +2410,31 @@
                   </div>
                   <!-- Metric 2: ยอดจัดซื้อรวม -->
                   <div class="budget-dock-pill">
-                    <span class="dock-label"><i class="fas fa-shopping-cart text-info me-1"></i>ยอดจัดซื้อ:</span>
+                    <span class="dock-label"><i class="fas fa-shopping-cart text-info me-1"></i>จัดซื้อ:</span>
                     <span class="dock-val text-info" id="budget-dock-spent">฿0.00</span>
-                    <span class="badge badge-ios badge-ios-info ms-1" id="budget-dock-spent-percent" style="font-size:0.72rem;">0%</span>
+                    <span class="badge badge-ios badge-ios-info ms-1" id="budget-dock-spent-percent" style="font-size:0.7rem;">0%</span>
                   </div>
                   <!-- Metric 3: คงเหลือ / เกินงบ -->
                   <div class="budget-dock-pill" id="budget-dock-remaining-pill">
                     <span class="dock-label" id="budget-dock-remaining-label"><i class="fas fa-check-circle text-success me-1"></i>คงเหลือ:</span>
                     <span class="dock-val text-success" id="budget-dock-remaining">฿0.00</span>
-                    <span class="badge badge-ios badge-ios-success ms-1" id="budget-dock-remaining-badge" style="font-size:0.72rem;">พร้อมใช้</span>
+                    <span class="badge badge-ios badge-ios-success ms-1" id="budget-dock-remaining-badge" style="font-size:0.7rem;">พร้อมใช้</span>
                   </div>
                   <!-- Metric 4: รายการ / ชิ้น -->
-                  <div class="budget-dock-pill d-none d-sm-flex">
+                  <div class="budget-dock-pill">
                     <span class="dock-label"><i class="fas fa-boxes text-secondary me-1"></i>เลือกแล้ว:</span>
                     <span class="dock-val text-dark-emphasis" id="budget-dock-count">0 รายการ</span>
-                    <span class="badge badge-ios badge-ios-secondary ms-1" id="budget-dock-units" style="font-size:0.72rem;">0 ชิ้น</span>
+                    <span class="badge badge-ios badge-ios-secondary ms-1" id="budget-dock-units" style="font-size:0.7rem;">0 ชิ้น</span>
                   </div>
                 </div>
 
-                <!-- Right Action Buttons -->
-                <div class="d-flex align-items-center gap-1.5 ms-auto">
-                  <button type="button" class="btn btn-ios btn-ios-success btn-sm d-flex align-items-center gap-1 px-2.5 py-1.5" style="font-size:0.82rem;" onclick="exportBudgetPlanToCSV()" title="ส่งออก Excel / CSV">
-                    <i class="fas fa-file-excel"></i><span class="d-none d-md-inline">ส่งออก CSV</span>
+                <!-- Right Action Buttons (Stay in same row) -->
+                <div class="budget-dock-actions">
+                  <button type="button" class="btn btn-ios btn-ios-success btn-sm d-inline-flex align-items-center gap-1 text-nowrap px-2.5 py-1.5" style="font-size:0.8rem;" onclick="exportBudgetPlanToCSV()" title="ส่งออก Excel / CSV">
+                    <i class="fas fa-file-excel"></i><span class="d-none d-sm-inline">ส่งออก CSV</span>
                   </button>
-                  <button type="button" class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center gap-1 px-2.5 py-1.5" style="font-size:0.82rem;" onclick="printBudgetProcurementPlan()" title="พิมพ์แผนจัดซื้อ">
-                    <i class="fas fa-print"></i><span class="d-none d-md-inline">พิมพ์แผน (A4)</span>
+                  <button type="button" class="btn btn-ios btn-ios-primary btn-sm d-inline-flex align-items-center gap-1 text-nowrap px-2.5 py-1.5" style="font-size:0.8rem;" onclick="printBudgetProcurementPlan()" title="พิมพ์แผนจัดซื้อ">
+                    <i class="fas fa-print"></i><span class="d-none d-sm-inline">พิมพ์แผน (A4)</span>
                   </button>
                 </div>
               </div>
