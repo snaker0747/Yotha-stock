@@ -91,6 +91,14 @@
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.09);
     }
 
+    .page-main-title {
+      font-size: clamp(1.15rem, 2vw, 1.35rem) !important;
+      font-weight: 700 !important;
+      color: var(--bs-dark-emphasis, #1e293b);
+      margin: 0 !important;
+      line-height: 1.3;
+    }
+
     .glass-nav {
       background: rgba(255, 255, 255, 0.88);
       backdrop-filter: blur(25px) saturate(180%);
@@ -1651,7 +1659,7 @@
             <div class="glass-card p-3 p-md-4 mb-3 mb-md-4">
               <div class="row g-2 g-md-3 align-items-center justify-content-between">
                 <div class="col-12 col-md-5">
-                  <h4 class="fw-bold mb-1 fs-5 fs-md-4"><i class="fas fa-box-open text-primary me-2"></i>เลือกรายการวัสดุเพื่อเบิก</h4>
+                  <h4 class="fw-bold mb-1 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-box-open text-primary me-2"></i>เลือกรายการวัสดุเพื่อเบิก</h4>
                   <p class="text-muted-ios small mb-0">เลือกหมวดหมู่หรือค้นหาวัสดุที่ต้องการใส่ตะกร้า</p>
                 </div>
                 <div class="col-12 col-md-7 d-flex flex-column flex-sm-row gap-2">
@@ -1674,7 +1682,7 @@
             <div class="glass-card p-4">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                  <h4 class="fw-bold mb-1"><i class="fas fa-history text-primary me-2"></i>ประวัติการเบิกวัสดุ</h4>
+                  <h4 class="fw-bold mb-1 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-history text-primary me-2"></i>ประวัติการเบิกวัสดุ</h4>
                   <p class="text-muted-ios small mb-0">รายการคำขอเบิกพัสดุทั้งหมดของคุณและสถานะการอนุมัติ</p>
                 </div>
                 <button class="btn btn-ios btn-ios-secondary btn-sm" onclick="loadHistoryData()">
@@ -1734,7 +1742,7 @@
             <div class="glass-card p-3 p-md-4">
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
                 <div>
-                  <h4 class="fw-bold mb-1 fs-5 fs-md-4"><i class="fas fa-warehouse text-primary me-2"></i>คลังพัสดุสต๊อกและราคา</h4>
+                  <h4 class="fw-bold mb-1 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-warehouse text-primary me-2"></i>คลังพัสดุสต๊อกและราคา</h4>
                   <p class="text-muted-ios small mb-0">บริหารจัดการรายการพัสดุ จำนวนคงเหลือ และราคาต่อหน่วย</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
@@ -1807,7 +1815,7 @@
             <div class="glass-card p-3 p-md-4 mb-4">
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
-                  <h4 class="fw-bold mb-1"><i class="fas fa-chart-pie text-primary me-2"></i>แดชบอร์ดภาพรวม &amp; สถิติการบริหารพัสดุ</h4>
+                  <h4 class="fw-bold mb-1 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-chart-pie text-primary me-2"></i>แดชบอร์ดภาพรวม &amp; สถิติการบริหารพัสดุ</h4>
                   <p class="text-muted-ios small mb-0">วิเคราะห์ข้อมูลสต๊อก สถิติการเบิกจ่าย และการนำพัสดุไปใช้งานสำหรับผู้บริหาร • ข้อมูลสรุป ณ วันที่ <span id="dash-report-date"></span></p>
                 </div>
                 <div class="d-flex gap-2">
@@ -1938,7 +1946,7 @@
             <div class="glass-card p-4">
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
                 <div>
-                  <h4 class="fw-bold mb-1"><i class="fas fa-bell text-warning me-2"></i>ประวัติการแจ้งเตือน</h4>
+                  <h4 class="fw-bold mb-1 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-bell text-warning me-2"></i>ประวัติการแจ้งเตือน</h4>
                   <p class="text-muted-ios small mb-0">รายการแจ้งเตือนทั้งหมดที่ระบบตรวจพบ เช่น พัสดุใกล้หมดคลัง</p>
                 </div>
                 <div class="d-flex gap-2">
@@ -1965,7 +1973,7 @@
               <!-- Profile Section -->
               <div class="col-lg-5">
                 <div class="glass-card p-4">
-                  <h5 class="fw-bold mb-3"><i class="fas fa-id-card text-primary me-2"></i>ข้อมูลโปรไฟล์ของคุณ</h5>
+                  <h4 class="fw-bold mb-3 text-dark-emphasis page-main-title" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-id-card text-primary me-2"></i>ข้อมูลโปรไฟล์ของคุณ</h4>
                   <form id="form-profile" onsubmit="event.preventDefault(); saveProfile();">
                     <div class="mb-3">
                       <label class="form-label small text-muted-ios">ชื่อ-นามสกุล</label>
@@ -1998,7 +2006,7 @@
               <div class="col-lg-7" id="admin-user-sec">
                 <div class="glass-card p-4">
                   <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0"><i class="fas fa-users text-primary me-2"></i>จัดการผู้ใช้งานระบบ</h5>
+                    <h4 class="fw-bold mb-0 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-users text-primary me-2"></i>จัดการผู้ใช้งานระบบ</h4>
                     <button class="btn btn-ios btn-ios-primary btn-sm" onclick="openUserModal()">
                       <i class="fas fa-user-plus me-1"></i>เพิ่มผู้ใช้
                     </button>
@@ -2030,7 +2038,7 @@
               <!-- HEADER & ACTIONS (Row 1: Title + Action Button) -->
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <div>
-                  <h4 class="fw-bold m-0 text-dark-emphasis" style="font-size: clamp(1.15rem, 2vw, 1.35rem);">
+                  <h4 class="fw-bold m-0 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);">
                     <i class="fas fa-layer-group text-primary me-2"></i>ภาพรวมสถานะสต๊อก & แผนการเติมพัสดุ
                   </h4>
                 </div>
@@ -2085,7 +2093,7 @@
               <!-- Header Toolbar -->
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
                 <div class="d-flex align-items-center">
-                  <h4 class="fw-bold mb-0 fs-5 fs-md-4 text-nowrap"><i class="fas fa-dolly-flatbed text-primary me-2"></i>ประวัติการนำเข้าและเพิ่มพัสดุ (Stock-in Logs)</h4>
+                  <h4 class="fw-bold mb-0 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-dolly-flatbed text-primary me-2"></i>ประวัติการนำเข้าและเพิ่มพัสดุ (Stock-in Logs)</h4>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap ms-auto">
                   <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="loadStockLogsData()">
@@ -2183,7 +2191,7 @@
             <div class="glass-card p-3 p-md-4 mb-4">
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
                 <div>
-                  <h4 class="fw-bold mb-1"><i class="fas fa-file-signature text-primary me-2"></i>ผลการเบิกจ่ายวัสดุ (ใบสรุปผลการเบิกจ่ายพัสดุ)</h4>
+                  <h4 class="fw-bold mb-1 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-file-signature text-primary me-2"></i>ผลการเบิกจ่ายวัสดุ (ใบสรุปผลการเบิกจ่ายพัสดุ)</h4>
                   <p class="text-muted-ios small mb-0">แบบฟอร์มคุมพัสดุและประวัติการเบิกจ่ายตามระเบียบราชการ (1 หน้า ต่อ 1 รายการวัสดุ) • สั่งพิมพ์ขนาด A4 แนวนอน</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
@@ -2231,7 +2239,7 @@
               <!-- Header Toolbar -->
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
                 <div class="d-flex align-items-center">
-                  <h4 class="fw-bold mb-0 fs-5 fs-md-4 text-nowrap"><i class="fas fa-coins text-primary me-2"></i>การบริหารงบประมาณ (ระบบวางแผนจัดซื้อพัสดุ)</h4>
+                  <h4 class="fw-bold mb-0 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-coins text-primary me-2"></i>การบริหารงบประมาณ (ระบบวางแผนจัดซื้อพัสดุ)</h4>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap ms-auto">
                   <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="exportBudgetPlanToCSV()">
