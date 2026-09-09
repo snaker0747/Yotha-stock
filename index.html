@@ -6447,12 +6447,10 @@
 
       const reportHTML = `
         <!-- REPORT HEADER -->
-        <div class="text-center mb-4">
-          <img src="${logoSrc}" style="height: 75px; object-fit: contain;" class="d-block mx-auto mb-2">
-          <h3 class="fw-bold mb-1" style="font-size:1.45rem;">แบบรายงานประวัติการนำเข้าและเพิ่มพัสดุ (Stock-in Audit Trail)</h3>
-          <h5 class="mb-1 text-muted" style="font-size:1.05rem;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
-          <p class="small text-muted mb-1">พิมพ์รายงาน ณ วันที่ ${dateStr} เวลา ${timeStr} น. | ผู้จัดทำรายงาน: <strong>${currentUser ? currentUser.name : 'เจ้าหน้าที่'}</strong></p>
-          <hr class="my-3">
+        <div class="text-center mb-3 pb-2 border-bottom">
+          <h3 class="fw-bold mb-1" style="font-size:1.45rem; color:#0f172a;">แบบรายงานประวัติการนำเข้าและเพิ่มพัสดุ (Stock-in Audit Trail)</h3>
+          <h5 class="mb-1 text-muted" style="font-size:1.1rem; font-weight:600; color:#334155;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
+          <p class="small text-muted mb-0">พิมพ์รายงาน ณ วันที่ ${dateStr} เวลา ${timeStr} น. | ผู้จัดทำรายงาน: <strong>${currentUser ? currentUser.name : 'เจ้าหน้าที่'}</strong></p>
         </div>
 
         <!-- KPI SUMMARY BOXES -->
@@ -6735,14 +6733,12 @@
 
       const reportHTML = `
         <!-- REPORT HEADER -->
-        <div class="text-center mb-4">
-          <img src="${logoSrc}" style="height: 75px; object-fit: contain;" class="d-block mx-auto mb-2">
-          <h3 class="fw-bold mb-1" style="font-size:1.45rem;">รายงานสถานะพัสดุ (In-Stock)</h3>
-          <h5 class="mb-1 text-muted" style="font-size:1.05rem;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
-          <p class="small text-muted mb-1">
+        <div class="text-center mb-3 pb-2 border-bottom">
+          <h3 class="fw-bold mb-1" style="font-size:1.45rem; color:#0f172a;">รายงานสถานะพัสดุ (In-Stock)</h3>
+          <h5 class="mb-1 text-muted" style="font-size:1.1rem; font-weight:600; color:#334155;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
+          <p class="small text-muted mb-0">
             ประจำวันที่ ${dateStr} เวลา ${timeStr} น. | ขอบเขตรายงาน: <strong>${filterSummaryText}</strong> | ผู้จัดทำ: <strong>${currentUser ? currentUser.name : 'เจ้าหน้าที่'}</strong>
           </p>
-          <hr class="my-3">
         </div>
 
         <!-- KPI SUMMARY BOXES -->
@@ -6891,12 +6887,10 @@
 
       const reportHTML = `
         <!-- REPORT HEADER -->
-        <div class="text-center mb-4">
-          <img src="${logoSrc}" style="height: 75px; object-fit: contain;" class="d-block mx-auto mb-2">
-          <h3 class="fw-bold mb-1" style="font-size:1.45rem;">รายงานสรุปประวัติการเบิกจ่ายพัสดุ</h3>
-          <h5 class="mb-1 text-muted" style="font-size:1.05rem;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
-          <p class="small text-muted mb-1">วันที่พิมพ์รายงาน: ${dateStr} เวลา ${timeStr} น. | ช่วงรายงาน: <strong>${periodLabel}</strong></p>
-          <hr class="my-3">
+        <div class="text-center mb-3 pb-2 border-bottom">
+          <h3 class="fw-bold mb-1" style="font-size:1.45rem; color:#0f172a;">รายงานสรุปประวัติการเบิกจ่ายพัสดุ</h3>
+          <h5 class="mb-1 text-muted" style="font-size:1.1rem; font-weight:600; color:#334155;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
+          <p class="small text-muted mb-0">วันที่พิมพ์รายงาน: ${dateStr} เวลา ${timeStr} น. | ช่วงรายงาน: <strong>${periodLabel}</strong> | ผู้จัดทำ: <strong>${currentUser ? currentUser.name : 'เจ้าหน้าที่'}</strong></p>
         </div>
 
         <!-- SUMMARY BOX -->
@@ -8218,16 +8212,14 @@
       });
 
       const printHtml = `
-        <div class="p-3" style="font-family:'Sarabun', 'Segoe UI', Tahoma, sans-serif; color:#111; background:#fff;">
+        <div class="p-2" style="font-family:'Sarabun', 'Segoe UI', Tahoma, sans-serif; color:#111; background:#fff;">
           <!-- HEADER -->
-          <div class="text-center mb-3">
-            <img src="${logoSrc}" style="height: 70px; object-fit: contain;" class="d-block mx-auto mb-2">
-            <h3 class="fw-bold mb-1" style="font-size:1.4rem;">แบบสรุปแผนประมาณการบริหารงบประมาณจัดซื้อพัสดุ / วัสดุ</h3>
-            <h5 class="mb-1 text-muted" style="font-size:1.05rem;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
-            <p class="small text-muted mb-1">
+          <div class="text-center mb-3 pb-2 border-bottom">
+            <h3 class="fw-bold mb-1" style="font-size:1.45rem; color:#0f172a;">แบบสรุปแผนประมาณการบริหารงบประมาณจัดซื้อพัสดุ / วัสดุ</h3>
+            <h5 class="mb-1 text-muted" style="font-size:1.1rem; font-weight:600; color:#334155;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
+            <p class="small text-muted mb-0">
               วันที่พิมพ์แผน: ${dateStr} เวลา ${timeStr} น. | ผู้จัดทำแผน: <strong>${creatorName}</strong> (${creatorPos})
             </p>
-            <hr class="my-2" style="border-top: 1.5px solid #000;">
           </div>
 
           <!-- KPI SUMMARY BOXES -->
@@ -8235,19 +8227,19 @@
             <div class="col-3">
               <div class="p-2 rounded text-center" style="background:#eaf3ff; border:1px solid #b3d1ff;">
                 <div class="small fw-semibold text-muted">วงเงินงบประมาณที่ตั้งไว้</div>
-                <div class="fw-bold" style="font-size:1.4rem; color:#007aff;">฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                <div class="fw-bold" style="font-size:1.35rem; color:#007aff;">฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
               </div>
             </div>
             <div class="col-3">
               <div class="p-2 rounded text-center" style="background:#f0f9ff; border:1px solid #bae6fd;">
                 <div class="small fw-semibold text-muted">ยอดประมาณการจัดซื้อรวม</div>
-                <div class="fw-bold" style="font-size:1.4rem; color:#0284c7;">฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                <div class="fw-bold" style="font-size:1.35rem; color:#0284c7;">฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
               </div>
             </div>
             <div class="col-3">
               <div class="p-2 rounded text-center" style="background:${isOver ? '#fef2f2' : '#f0fdf4'}; border:1px solid ${isOver ? '#fca5a5' : '#86efac'};">
                 <div class="small fw-semibold text-muted">${isOver ? 'เกินวงเงินงบประมาณ' : 'งบประมาณคงเหลือสุทธิ'}</div>
-                <div class="fw-bold" style="font-size:1.4rem; color:${isOver ? '#dc2626' : '#16a34a'};">
+                <div class="fw-bold" style="font-size:1.35rem; color:${isOver ? '#dc2626' : '#16a34a'};">
                   ฿${Math.abs(remaining).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
                 </div>
               </div>
@@ -8255,13 +8247,13 @@
             <div class="col-3">
               <div class="p-2 rounded text-center" style="background:#faf5ff; border:1px solid #e9d5ff;">
                 <div class="small fw-semibold text-muted">รายการ / จำนวนชิ้นรวม</div>
-                <div class="fw-bold" style="font-size:1.4rem; color:#9333ea;">${selectedItemsList.length} รายการ (${totalUnits.toLocaleString()} ชิ้น)</div>
+                <div class="fw-bold" style="font-size:1.35rem; color:#9333ea;">${selectedItemsList.length} รายการ (${totalUnits.toLocaleString()} ชิ้น)</div>
               </div>
             </div>
           </div>
 
           <!-- MAIN PROCUREMENT ITEMS TABLE -->
-          <table class="table table-bordered table-sm align-middle mb-4" style="font-size:0.83rem; border-color:#94a3b8;">
+          <table class="table table-bordered table-sm align-middle mb-2" style="font-size:0.85rem; border-color:#94a3b8;">
             <thead style="background:#f1f5f9;">
               <tr class="text-center">
                 <th style="width:40px;">ลำดับ</th>
@@ -8300,28 +8292,6 @@
               </tr>
             </tbody>
           </table>
-
-          <!-- 3 OFFICIAL SIGNATURE BLOCKS -->
-          <div class="row pt-4 mt-2" style="page-break-inside: avoid;">
-            <div class="col-4 text-center">
-              <p class="mb-4">ลงชื่อ........................................................<br><span class="small fw-semibold text-muted">(ผู้จัดทำแผนประมาณการ)</span></p>
-              <p class="mb-0">(${creatorName})</p>
-              <p class="small text-muted">ตำแหน่ง ${creatorPos}</p>
-              <p class="small text-muted">วันที่ ...... / ...... / 2569</p>
-            </div>
-            <div class="col-4 text-center">
-              <p class="mb-4">ลงชื่อ........................................................<br><span class="small fw-semibold text-muted">(ผู้ตรวจสอบงบประมาณ)</span></p>
-              <p class="mb-0">(........................................................)</p>
-              <p class="small text-muted">ตำแหน่ง หัวหน้าฝ่าย / ผู้อำนวยการส่วน</p>
-              <p class="small text-muted">วันที่ ...... / ...... / 2569</p>
-            </div>
-            <div class="col-4 text-center">
-              <p class="mb-4">ลงชื่อ........................................................<br><span class="small fw-semibold text-muted">(ผู้อนุมัติ)</span></p>
-              <p class="mb-0">(........................................................)</p>
-              <p class="small text-muted">ตำแหน่ง ผู้อำนวยการสำนักช่าง</p>
-              <p class="small text-muted">วันที่ ...... / ...... / 2569</p>
-            </div>
-          </div>
         </div>
       `;
 
