@@ -2874,11 +2874,12 @@
         <div class="modal-body pt-3">
           <form id="form-user-mgmt" onsubmit="event.preventDefault(); submitUserManagementForm();">
             <input type="hidden" id="usermgmt-mode" value="add">
+            <input type="hidden" id="usermgmt-old-id" value="">
             
             <div class="mb-3">
               <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-id-card me-1 text-primary"></i>รหัสผู้ใช้งาน (User ID / Username) <span class="text-danger">*</span></label>
-              <input type="text" id="usermgmt-id" class="form-control form-control-ios" placeholder="เช่น 123456 หรือ somchai.j" required>
-              <div class="form-text text-muted-ios" style="font-size:0.75rem;">ใช้สำหรับล็อกอินเข้าสู่ระบบ (ห้ามซ้ำ)</div>
+              <input type="text" id="usermgmt-id" class="form-control form-control-ios" placeholder="เช่น 123456 หรือ admin หรือ somchai.j" required>
+              <div class="form-text text-muted-ios" style="font-size:0.75rem;">ใช้สำหรับล็อกอินเข้าสู่ระบบ (สามารถแก้ไขได้)</div>
             </div>
 
             <div class="mb-3">
@@ -3460,27 +3461,43 @@
         if (action === 'saveUser') {
           const u = args[0] || {};
           const uid = String(u.id || '').trim();
+          const oldId = String(u.oldId || uid).trim();
           if (!uid) throw new Error('กรุณาระบุรหัสผู้ใช้');
-
-          const userRows = await _dbFetch('users?id=eq.' + encodeURIComponent(uid) + '&select=*');
-          const isNew = (!userRows || userRows.length === 0);
 
           const payload = {
             id: uid,
             name: u.name || '',
-            role: u.role || 'USER',
+            role: (u.role || 'USER').toLowerCase(),
             position: u.position || '',
             email: u.email || '',
             phone: u.phone || '',
             status: u.status || 'ACTIVE'
           };
-          if (u.password) payload.password = u.password;
+          if (u.password && String(u.password).trim()) {
+            payload.password = String(u.password).trim();
+          }
 
-          if (isNew) {
+          if (u.mode === 'add' || !oldId) {
+            const userRows = await _dbFetch('users?id=eq.' + encodeURIComponent(uid) + '&select=*');
+            if (userRows && userRows.length > 0) throw new Error('รหัสผู้ใช้งานนี้มีอยู่ในระบบแล้ว');
             if (!payload.password) payload.password = '1234';
             await _dbFetch('users', { method: 'POST', body: JSON.stringify([payload]) });
           } else {
-            await _dbFetch('users?id=eq.' + encodeURIComponent(uid), { method: 'PATCH', body: JSON.stringify(payload) });
+            // Edit mode
+            if (oldId !== uid) {
+              const checkNew = await _dbFetch('users?id=eq.' + encodeURIComponent(uid) + '&select=*');
+              if (checkNew && checkNew.length > 0) throw new Error('รหัสผู้ใช้งานใหม่ (' + uid + ') มีผู้อื่นใช้งานแล้ว');
+              
+              await _dbFetch('users?id=eq.' + encodeURIComponent(oldId), {
+                method: 'PATCH',
+                body: JSON.stringify(payload)
+              });
+            } else {
+              await _dbFetch('users?id=eq.' + encodeURIComponent(uid), {
+                method: 'PATCH',
+                body: JSON.stringify(payload)
+              });
+            }
           }
           return { success: true };
         }
@@ -3708,20 +3725,28 @@
           localStorage.setItem('rayong_sys_auth', JSON.stringify({ id: inputId, pass: inputPass }));
           proceedToAppView(isSilent);
         } else {
-          if (inputId === '123456' && inputPass === '123456') {
-            currentUser = { id: '123456', name: 'นางสาวรัญชนา ทองเวียง', position: 'ผู้ช่วยเจ้าหน้าที่ธุรการ', email: 'lula.runchana@gmail.com', phone: '038-611111', role: 'superadmin', status: 'Active' };
+          if (inputId === 'admin' && inputPass === '4321') {
+            currentUser = { id: 'admin', name: 'Admin', position: 'ผู้ดูแลระบบ', email: 'admin@rayongcity.go.th', phone: '-', role: 'superadmin', status: 'ACTIVE' };
+            localStorage.setItem('rayong_sys_auth', JSON.stringify({ id: 'admin', pass: '4321' }));
+            proceedToAppView(isSilent);
+          } else if (inputId === '123456' && inputPass === '123456') {
+            currentUser = { id: '123456', name: 'นางสาวรัญชนา ทองเวียง', position: 'ผู้ช่วยเจ้าหน้าที่ธุรการ', email: 'lula.runchana@gmail.com', phone: '038-611111', role: 'superadmin', status: 'ACTIVE' };
             localStorage.setItem('rayong_sys_auth', JSON.stringify({ id: '123456', pass: '123456' }));
             proceedToAppView(isSilent);
           } else {
             localStorage.removeItem('rayong_sys_auth');
             showLoginView();
-            if (!isSilent) Swal.fire('เข้าสู่ระบบไม่สำเร็จ', res ? res.msg : 'รหัสผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง', 'error');
+            if (!isSilent) Swal.fire('เข้าสู่ระบบไม่สำเร็จ', res ? res.message || res.msg : 'รหัสผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง', 'error');
           }
         }
       } catch (err) {
         console.error("Login error:", err);
-        if (inputId === '123456' && inputPass === '123456') {
-          currentUser = { id: '123456', name: 'นางสาวรัญชนา ทองเวียง', position: 'ผู้ช่วยเจ้าหน้าที่ธุรการ', email: 'lula.runchana@gmail.com', phone: '038-611111', role: 'superadmin', status: 'Active' };
+        if (inputId === 'admin' && inputPass === '4321') {
+          currentUser = { id: 'admin', name: 'Admin', position: 'ผู้ดูแลระบบ', email: 'admin@rayongcity.go.th', phone: '-', role: 'superadmin', status: 'ACTIVE' };
+          localStorage.setItem('rayong_sys_auth', JSON.stringify({ id: 'admin', pass: '4321' }));
+          proceedToAppView(isSilent);
+        } else if (inputId === '123456' && inputPass === '123456') {
+          currentUser = { id: '123456', name: 'นางสาวรัญชนา ทองเวียง', position: 'ผู้ช่วยเจ้าหน้าที่ธุรการ', email: 'lula.runchana@gmail.com', phone: '038-611111', role: 'superadmin', status: 'ACTIVE' };
           localStorage.setItem('rayong_sys_auth', JSON.stringify({ id: '123456', pass: '123456' }));
           proceedToAppView(isSilent);
         } else {
@@ -7922,6 +7947,7 @@
 
     function openAddUserModal() {
       document.getElementById('usermgmt-mode').value = 'add';
+      document.getElementById('usermgmt-old-id').value = '';
       document.getElementById('user-modal-title').innerHTML = `<i class="fas fa-user-plus text-primary me-2"></i>เพิ่มผู้ใช้งานใหม่`;
       
       const idInput = document.getElementById('usermgmt-id');
@@ -7955,11 +7981,14 @@
       }
 
       document.getElementById('usermgmt-mode').value = 'edit';
+      document.getElementById('usermgmt-old-id').value = u.id;
       document.getElementById('user-modal-title').innerHTML = `<i class="fas fa-user-edit text-primary me-2"></i>แก้ไขข้อมูลผู้ใช้ & สิทธิ์`;
       
+      const isSuper = (currentUser && currentUser.role && currentUser.role.toUpperCase() === 'SUPERADMIN');
       const idInput = document.getElementById('usermgmt-id');
       idInput.value = u.id;
-      idInput.readOnly = true;
+      idInput.readOnly = !isSuper; // Superadmin can edit ID freely
+      idInput.disabled = false;
 
       document.getElementById('usermgmt-name').value = u.name || '';
       document.getElementById('usermgmt-pos').value = u.position || '';
@@ -7971,8 +8000,8 @@
       const passInput = document.getElementById('usermgmt-pass');
       passInput.value = '';
       passInput.required = false;
-      document.getElementById('usermgmt-pass-label').innerHTML = `<i class="fas fa-key me-1 text-warning"></i>เปลี่ยนรหัสผ่าน (เว้นว่างหากไม่เปลี่ยน)`;
-      document.getElementById('usermgmt-pass-help').innerText = 'หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นว่างไว้';
+      document.getElementById('usermgmt-pass-label').innerHTML = `<i class="fas fa-key me-1 text-warning"></i>กำหนดรหัสผ่านใหม่ (เว้นว่างหากไม่เปลี่ยน)`;
+      document.getElementById('usermgmt-pass-help').innerText = 'หากต้องการเปลี่ยนรหัสผ่าน ให้กรอกรหัสใหม่ที่นี่ (เว้นว่างไว้เพื่อใช้รหัสเดิม)';
 
       const modalEl = document.getElementById('modal-user-mgmt');
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -7981,6 +8010,7 @@
 
     async function submitUserManagementForm() {
       const mode = document.getElementById('usermgmt-mode').value;
+      const oldId = document.getElementById('usermgmt-old-id').value.trim();
       const id = document.getElementById('usermgmt-id').value.trim();
       const name = document.getElementById('usermgmt-name').value.trim();
       const position = document.getElementById('usermgmt-pos').value.trim();
@@ -8000,7 +8030,7 @@
         return;
       }
 
-      const payload = { id, name, position, phone, email, role, status };
+      const payload = { mode, oldId, id, name, position, phone, email, role, status };
       if (password) payload.password = password;
 
       Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -8010,6 +8040,30 @@
           const modalEl = document.getElementById('modal-user-mgmt');
           const modal = bootstrap.Modal.getInstance(modalEl);
           if (modal) modal.hide();
+
+          // If edited own account, sync current active session
+          if (currentUser && (String(currentUser.id) === String(oldId) || String(currentUser.id) === String(id))) {
+            currentUser.id = id;
+            currentUser.name = name;
+            currentUser.role = role;
+            currentUser.position = position;
+            currentUser.email = email;
+            currentUser.phone = phone;
+            currentUser.status = status;
+            localStorage.setItem('rayong_cached_user', JSON.stringify(currentUser));
+            const authStr = localStorage.getItem('rayong_sys_auth');
+            if (authStr) {
+              const a = JSON.parse(authStr);
+              a.id = id;
+              if (password) a.pass = password;
+              localStorage.setItem('rayong_sys_auth', JSON.stringify(a));
+            }
+            const nameEl = document.getElementById('user-display-name');
+            const roleEl = document.getElementById('user-display-role');
+            if (nameEl) nameEl.innerText = currentUser.name;
+            if (roleEl) roleEl.innerText = (currentUser.role || 'SUPERADMIN').toUpperCase();
+            applyRolePermissions();
+          }
 
           Swal.fire({
             icon: 'success',
