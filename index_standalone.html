@@ -2002,24 +2002,54 @@
                 </div>
               </div>
 
-              <!-- User Management Table (Admin Only) -->
+              <!-- User Management Table (Admin/Superadmin Only) -->
               <div class="col-lg-7" id="admin-user-sec">
-                <div class="glass-card p-4">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="fw-bold mb-0 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-users text-primary me-2"></i>จัดการผู้ใช้งานระบบ</h4>
-                    <button class="btn btn-ios btn-ios-primary btn-sm" onclick="openUserModal()">
-                      <i class="fas fa-user-plus me-1"></i>เพิ่มผู้ใช้
+                <div class="glass-card p-3 p-md-4">
+                  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                      <h4 class="fw-bold mb-0 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-users-cog text-primary me-2"></i>จัดการผู้ใช้งานระบบ</h4>
+                      <span class="badge badge-ios badge-ios-primary" id="usermgmt-total-badge">0 คน</span>
+                    </div>
+                    <button class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center gap-1 shadow-sm px-3" onclick="openAddUserModal()">
+                      <i class="fas fa-user-plus me-1"></i>เพิ่มผู้ใช้ใหม่
                     </button>
                   </div>
+
+                  <!-- Search & Filter Controls -->
+                  <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-6">
+                      <div class="position-relative">
+                        <i class="fas fa-search position-absolute text-muted-ios" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+                        <input type="text" id="usermgmt-search" class="form-control form-control-ios ps-4" placeholder="ค้นหาชื่อ, รหัส, ตำแหน่ง..." oninput="debouncedRenderUsersTable()">
+                      </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <select id="usermgmt-filter-role" class="form-select form-control-ios" onchange="renderUsersTable()">
+                        <option value="ALL">-- ทุกสิทธิ์ --</option>
+                        <option value="SUPERADMIN">👑 Superadmin</option>
+                        <option value="ADMIN">🛡️ Admin</option>
+                        <option value="APPROVER">✍️ Approver</option>
+                        <option value="USER">👤 User</option>
+                      </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <select id="usermgmt-filter-status" class="form-select form-control-ios" onchange="renderUsersTable()">
+                        <option value="ALL">-- ทุกสถานะ --</option>
+                        <option value="ACTIVE">🟢 Active</option>
+                        <option value="SUSPENDED">🔴 Suspended</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div class="table-responsive">
-                    <table class="table table-ios w-100">
+                    <table class="table table-ios w-100 align-middle">
                       <thead>
                         <tr>
-                          <th>รหัส (ID)</th>
-                          <th>ชื่อ-นามสกุล</th>
-                          <th>สิทธิ์</th>
-                          <th>สถานะ</th>
-                          <th>จัดการ</th>
+                          <th style="min-width: 90px;">รหัส (ID)</th>
+                          <th style="min-width: 160px;">ข้อมูลผู้ใช้งาน</th>
+                          <th style="min-width: 110px;" class="text-center">สิทธิ์การใช้งาน</th>
+                          <th style="min-width: 90px;" class="text-center">สถานะ</th>
+                          <th style="min-width: 120px;" class="text-end">จัดการ</th>
                         </tr>
                       </thead>
                       <tbody id="users-table-body">
@@ -2833,6 +2863,81 @@
     </div>
   </div>
 
+  <!-- USER MANAGEMENT MODAL -->
+  <div class="modal fade" id="modal-user-mgmt" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-card border-0 p-3">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="user-modal-title"><i class="fas fa-user-plus text-primary me-2"></i>จัดการผู้ใช้งาน</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-3">
+          <form id="form-user-mgmt" onsubmit="event.preventDefault(); submitUserManagementForm();">
+            <input type="hidden" id="usermgmt-mode" value="add">
+            
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-id-card me-1 text-primary"></i>รหัสผู้ใช้งาน (User ID / Username) <span class="text-danger">*</span></label>
+              <input type="text" id="usermgmt-id" class="form-control form-control-ios" placeholder="เช่น 123456 หรือ somchai.j" required>
+              <div class="form-text text-muted-ios" style="font-size:0.75rem;">ใช้สำหรับล็อกอินเข้าสู่ระบบ (ห้ามซ้ำ)</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-user me-1 text-primary"></i>ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+              <input type="text" id="usermgmt-name" class="form-control form-control-ios" placeholder="เช่น นายสมชาย ใจดี" required>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-id-badge me-1 text-primary"></i>ตำแหน่ง</label>
+                <input type="text" id="usermgmt-pos" class="form-control form-control-ios" placeholder="เช่น นายช่างโยธาปฏิบัติงาน">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-phone me-1 text-primary"></i>เบอร์โทรศัพท์</label>
+                <input type="text" id="usermgmt-phone" class="form-control form-control-ios" placeholder="เช่น 038-611111">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-envelope me-1 text-primary"></i>อีเมล</label>
+              <input type="email" id="usermgmt-email" class="form-control form-control-ios" placeholder="เช่น somchai@rayongcity.go.th">
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-shield-alt text-primary me-1"></i>สิทธิ์การใช้งาน (Role) <span class="text-danger">*</span></label>
+                <select id="usermgmt-role" class="form-select form-control-ios" required>
+                  <option value="USER">👤 ผู้ใช้งานทั่วไป (User)</option>
+                  <option value="APPROVER">✍️ หัวหน้า/ผู้อนุมัติ (Approver)</option>
+                  <option value="ADMIN">🛡️ เจ้าหน้าที่พัสดุ (Admin)</option>
+                  <option value="SUPERADMIN">👑 ผู้ดูแลระบบสูงสุด (Superadmin)</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-dark-emphasis"><i class="fas fa-toggle-on text-success me-1"></i>สถานะบัญชี (Status) <span class="text-danger">*</span></label>
+                <select id="usermgmt-status" class="form-select form-control-ios" required>
+                  <option value="ACTIVE">🟢 ปกติ (Active)</option>
+                  <option value="SUSPENDED">🔴 ระงับการใช้งาน (Suspended)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark-emphasis" id="usermgmt-pass-label"><i class="fas fa-key me-1 text-warning"></i>รหัสผ่าน <span class="text-danger" id="usermgmt-pass-req">*</span></label>
+              <input type="password" id="usermgmt-pass" class="form-control form-control-ios" placeholder="กำหนดรหัสผ่าน">
+              <div class="form-text text-muted-ios" id="usermgmt-pass-help" style="font-size:0.75rem;">สำหรับบัญชีใหม่ กำหนดรหัสผ่านเริ่มต้น (เช่น 1234)</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-ios btn-ios-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-ios btn-ios-primary" onclick="submitUserManagementForm()">
+            <i class="fas fa-save me-1"></i>บันทึกข้อมูลผู้ใช้
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- JS APPLICATION LOGIC -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -3505,6 +3610,7 @@
                 const roleEl = document.getElementById('user-display-role');
                 if (nameEl && currentUser.name) nameEl.innerText = currentUser.name;
                 if (roleEl && currentUser.role) roleEl.innerText = (currentUser.role || 'SUPERADMIN').toUpperCase();
+                applyRolePermissions();
               } catch(e) {}
             }
 
@@ -3642,6 +3748,8 @@
         document.getElementById('prof-phone').value = currentUser.phone || '';
       }
 
+      applyRolePermissions();
+
       const lastTab = localStorage.getItem('rayong_sys_last_tab') || 'home';
 
       if (!isSilent) Swal.close();
@@ -3668,6 +3776,82 @@
       cart = [];
       updateCartBadge();
       showLoginView();
+    }
+
+    // ================= RBAC: ROLE-BASED ACCESS CONTROL =================
+    function isTabAllowed(tabName, role) {
+      const r = (role || 'USER').toUpperCase().trim();
+      if (r === 'SUPERADMIN' || r === 'ADMIN') return true;
+      if (r === 'APPROVER') {
+        return ['home', 'history', 'stocklogs', 'dashboard', 'notifications', 'stockview', 'stockledger', 'budget', 'users'].includes(tabName);
+      }
+      // USER
+      return ['home', 'history', 'notifications', 'users'].includes(tabName);
+    }
+
+    function applyRolePermissions() {
+      const role = (currentUser && currentUser.role ? String(currentUser.role).toUpperCase().trim() : 'USER');
+      const isSuper = (role === 'SUPERADMIN');
+      const isAdmin = (role === 'ADMIN' || isSuper);
+      const isApprover = (role === 'APPROVER' || isAdmin);
+
+      // 1. Sidebar Nav Menus
+      const menuInv = document.getElementById('menu-inventory');
+      const menuStockLogs = document.getElementById('menu-stocklogs');
+      const menuDash = document.getElementById('menu-dashboard');
+      const menuStockView = document.getElementById('menu-stockview');
+      const menuStockLedger = document.getElementById('menu-stockledger');
+      const menuBudget = document.getElementById('menu-budget');
+      const menuUsers = document.getElementById('menu-users');
+
+      if (menuInv) menuInv.style.display = isAdmin ? '' : 'none';
+      if (menuStockLogs) menuStockLogs.style.display = isApprover ? '' : 'none';
+      if (menuDash) menuDash.style.display = isApprover ? '' : 'none';
+      if (menuStockView) menuStockView.style.display = isApprover ? '' : 'none';
+      if (menuStockLedger) menuStockLedger.style.display = isApprover ? '' : 'none';
+      if (menuBudget) menuBudget.style.display = isApprover ? '' : 'none';
+
+      // Update Users menu text
+      if (menuUsers) {
+        if (isAdmin) {
+          menuUsers.innerHTML = '<i class="fas fa-users-cog"></i> <span>ผู้ใช้งาน & โปรไฟล์</span>';
+        } else {
+          menuUsers.innerHTML = '<i class="fas fa-id-card"></i> <span>ข้อมูลโปรไฟล์</span>';
+        }
+      }
+
+      // 2. Mobile Bottom Nav Menus
+      const mobInv = document.getElementById('mob-menu-inventory');
+      const mobDash = document.getElementById('mob-menu-dashboard');
+      const mobStockView = document.getElementById('mob-menu-stockview');
+      const mobStockLedger = document.getElementById('mob-menu-stockledger');
+      const mobBudget = document.getElementById('mob-menu-budget');
+
+      if (mobInv) mobInv.style.display = isAdmin ? '' : 'none';
+      if (mobDash) mobDash.style.display = isApprover ? '' : 'none';
+      if (mobStockView) mobStockView.style.display = isApprover ? '' : 'none';
+      if (mobStockLedger) mobStockLedger.style.display = isApprover ? '' : 'none';
+      if (mobBudget) mobBudget.style.display = isApprover ? '' : 'none';
+
+      // 3. User Management Section in Tab 6 (tab-users)
+      const adminSec = document.getElementById('admin-user-sec');
+      const profileCol = document.querySelector('#tab-users .col-lg-5');
+      if (adminSec) {
+        adminSec.style.display = isAdmin ? '' : 'none';
+      }
+      if (profileCol) {
+        if (isAdmin) {
+          profileCol.className = 'col-lg-5';
+        } else {
+          profileCol.className = 'col-lg-8 mx-auto';
+        }
+      }
+
+      // 4. Update role badge on header / sidebar
+      const roleBadgeEl = document.getElementById('user-display-role');
+      if (roleBadgeEl) {
+        roleBadgeEl.innerText = role;
+      }
     }
 
     // ================= DATA CACHE (localStorage) =================
@@ -3794,6 +3978,11 @@
 
     // Instant Tab Switching (0ms UI Latency)
     function switchTab(tabName) {
+      const curRole = currentUser ? (currentUser.role || 'USER') : 'USER';
+      if (!isTabAllowed(tabName, curRole)) {
+        tabName = 'home';
+      }
+
       localStorage.setItem('rayong_sys_last_tab', tabName);
 
       document.querySelectorAll('.tab-content-page').forEach(el => el.classList.add('hidden'));
@@ -7612,43 +7801,310 @@
       renderUsersTable();
     }
 
+    const debouncedRenderUsersTable = debounce(renderUsersTable, 150);
+
     function renderUsersTable() {
-      if (currentUser.role !== 'admin' && currentUser.role !== 'superadmin') return;
+      const isSuper = (currentUser && currentUser.role && currentUser.role.toUpperCase() === 'SUPERADMIN');
+      const isAdmin = (currentUser && currentUser.role && (currentUser.role.toUpperCase() === 'ADMIN' || isSuper));
+      if (!isAdmin) return;
+
       const body = document.getElementById('users-table-body');
-      if (usersData.length === 0) {
-        body.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted-ios">ไม่มีผู้ใช้งานในระบบ</td></tr>`;
+      if (!body) return;
+
+      const q = (document.getElementById('usermgmt-search')?.value || '').trim().toLowerCase();
+      const roleFilter = document.getElementById('usermgmt-filter-role')?.value || 'ALL';
+      const statusFilter = document.getElementById('usermgmt-filter-status')?.value || 'ALL';
+
+      let filtered = (usersData || []);
+
+      if (q) {
+        filtered = filtered.filter(u => 
+          (u.id && String(u.id).toLowerCase().includes(q)) ||
+          (u.name && u.name.toLowerCase().includes(q)) ||
+          (u.position && u.position.toLowerCase().includes(q)) ||
+          (u.email && u.email.toLowerCase().includes(q)) ||
+          (u.phone && u.phone.toLowerCase().includes(q))
+        );
+      }
+
+      if (roleFilter !== 'ALL') {
+        filtered = filtered.filter(u => (u.role || 'USER').toUpperCase() === roleFilter.toUpperCase());
+      }
+
+      if (statusFilter !== 'ALL') {
+        filtered = filtered.filter(u => {
+          const st = (u.status || 'ACTIVE').toUpperCase();
+          if (statusFilter === 'ACTIVE') return st === 'ACTIVE';
+          return st === 'SUSPENDED' || st === 'INACTIVE';
+        });
+      }
+
+      // Update badge
+      const badge = document.getElementById('usermgmt-total-badge');
+      if (badge) badge.innerText = `${filtered.length} คน`;
+
+      if (filtered.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted-ios"><i class="fas fa-user-slash fa-2x mb-2 d-block opacity-50"></i>ไม่พบรายชื่อผู้ใช้งานตรงตามเงื่อนไข</td></tr>`;
         return;
       }
 
       let html = '';
-      usersData.forEach(u => {
+      filtered.forEach(u => {
+        const uRole = (u.role || 'USER').toUpperCase();
+        const uStatus = (u.status || 'ACTIVE').toUpperCase();
+        const isSelf = (currentUser && String(currentUser.id) === String(u.id));
+        const isTargetSuper = (uRole === 'SUPERADMIN');
+
+        // Role badge
+        let roleBadge = '';
+        if (uRole === 'SUPERADMIN') {
+          roleBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-size:0.75rem;"><i class="fas fa-crown me-1 text-warning"></i>Superadmin</span>`;
+        } else if (uRole === 'ADMIN') {
+          roleBadge = `<span class="badge" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:0.75rem;"><i class="fas fa-shield-alt me-1 text-primary"></i>Admin</span>`;
+        } else if (uRole === 'APPROVER') {
+          roleBadge = `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:0.75rem;"><i class="fas fa-user-check me-1 text-warning"></i>Approver</span>`;
+        } else {
+          roleBadge = `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:0.75rem;"><i class="fas fa-user me-1 text-success"></i>User</span>`;
+        }
+
+        // Status badge
+        let statusBadge = '';
+        if (uStatus === 'ACTIVE') {
+          statusBadge = `<span class="badge badge-ios badge-ios-success py-1 px-2" style="font-size:0.73rem;"><i class="fas fa-check-circle me-1"></i>Active</span>`;
+        } else {
+          statusBadge = `<span class="badge badge-ios badge-ios-danger py-1 px-2" style="font-size:0.73rem;"><i class="fas fa-ban me-1"></i>Suspended</span>`;
+        }
+
+        // Action permissions
+        const canDelete = isSuper ? !isSelf : (!isTargetSuper && !isSelf);
+        const canEdit = isSuper ? true : (!isTargetSuper || isSelf);
+
         html += `
           <tr>
-            <td class="fw-bold">${u.id}</td>
-            <td>${u.name}<br><span class="small text-muted-ios">${u.position}</span></td>
-            <td><span class="badge badge-ios badge-ios-primary">${u.role}</span></td>
-            <td><span class="badge badge-ios badge-ios-success">${u.status}</span></td>
             <td>
-              <button class="btn btn-sm btn-ios-secondary" onclick="editUserRole('${u.id}', '${u.role}')"><i class="fas fa-user-edit"></i></button>
-              ${currentUser.role === 'superadmin' ? `<button class="btn btn-sm btn-ios-danger ms-1" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>` : ''}
+              <span class="fw-bold text-dark-emphasis">${escapeHtml(u.id)}</span>
+              ${isSelf ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size:0.65rem;">(คุณ)</span>' : ''}
+            </td>
+            <td>
+              <div class="fw-semibold text-dark-emphasis">${escapeHtml(u.name || '-')}</div>
+              <div class="small text-muted-ios">${escapeHtml(u.position || 'เจ้าหน้าที่')} ${u.phone ? `&bull; <i class="fas fa-phone-alt ms-1 me-1"></i>${escapeHtml(u.phone)}` : ''}</div>
+              ${u.email ? `<div class="small text-muted-ios" style="font-size:0.75rem;"><i class="far fa-envelope me-1"></i>${escapeHtml(u.email)}</div>` : ''}
+            </td>
+            <td class="text-center">${roleBadge}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-end text-nowrap">
+              <div class="btn-group btn-group-sm">
+                ${canEdit ? `
+                  <button class="btn btn-ios btn-ios-secondary btn-sm px-2" title="แก้ไขข้อมูล & สิทธิ์" onclick="openEditUserModal('${escapeHtml(u.id)}')">
+                    <i class="fas fa-user-edit text-primary"></i>
+                  </button>
+                  <button class="btn btn-ios btn-ios-secondary btn-sm px-2" title="รีเซ็ตรหัสผ่าน" onclick="promptResetUserPassword('${escapeHtml(u.id)}', '${escapeHtml(u.name)}')">
+                    <i class="fas fa-key text-warning"></i>
+                  </button>
+                  ${!isSelf ? `
+                    <button class="btn btn-ios btn-ios-secondary btn-sm px-2" title="${uStatus === 'ACTIVE' ? 'ระงับการใช้งาน' : 'เปิดใช้งาน'}" onclick="toggleUserStatus('${escapeHtml(u.id)}', '${uStatus}')">
+                      <i class="fas ${uStatus === 'ACTIVE' ? 'fa-user-lock text-danger' : 'fa-user-check text-success'}"></i>
+                    </button>
+                  ` : ''}
+                ` : ''}
+                ${canDelete ? `
+                  <button class="btn btn-ios btn-ios-secondary text-danger btn-sm px-2" title="ลบผู้ใช้" onclick="deleteUser('${escapeHtml(u.id)}')">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                ` : ''}
+              </div>
             </td>
           </tr>`;
       });
+
       body.innerHTML = html;
     }
 
-    async function deleteUser(userId) {
-      if (userId === currentUser.id) {
-        Swal.fire('ข้อผิดพลาด', 'คุณไม่สามารถลบตัวเองได้', 'error');
+    function openAddUserModal() {
+      document.getElementById('usermgmt-mode').value = 'add';
+      document.getElementById('user-modal-title').innerHTML = `<i class="fas fa-user-plus text-primary me-2"></i>เพิ่มผู้ใช้งานใหม่`;
+      
+      const idInput = document.getElementById('usermgmt-id');
+      idInput.value = '';
+      idInput.readOnly = false;
+      idInput.disabled = false;
+
+      document.getElementById('usermgmt-name').value = '';
+      document.getElementById('usermgmt-pos').value = '';
+      document.getElementById('usermgmt-phone').value = '';
+      document.getElementById('usermgmt-email').value = '';
+      document.getElementById('usermgmt-role').value = 'USER';
+      document.getElementById('usermgmt-status').value = 'ACTIVE';
+      
+      const passInput = document.getElementById('usermgmt-pass');
+      passInput.value = '1234';
+      passInput.required = true;
+      document.getElementById('usermgmt-pass-label').innerHTML = `<i class="fas fa-key me-1 text-warning"></i>รหัสผ่านเริ่มต้น <span class="text-danger">*</span>`;
+      document.getElementById('usermgmt-pass-help').innerText = 'กำหนดรหัสผ่านเริ่มต้นสำหรับเข้าใช้งาน (ค่าเริ่มต้น: 1234)';
+
+      const modalEl = document.getElementById('modal-user-mgmt');
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+
+    function openEditUserModal(userId) {
+      const u = usersData.find(x => String(x.id) === String(userId));
+      if (!u) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลผู้ใช้งาน', 'error');
         return;
       }
+
+      document.getElementById('usermgmt-mode').value = 'edit';
+      document.getElementById('user-modal-title').innerHTML = `<i class="fas fa-user-edit text-primary me-2"></i>แก้ไขข้อมูลผู้ใช้ & สิทธิ์`;
+      
+      const idInput = document.getElementById('usermgmt-id');
+      idInput.value = u.id;
+      idInput.readOnly = true;
+
+      document.getElementById('usermgmt-name').value = u.name || '';
+      document.getElementById('usermgmt-pos').value = u.position || '';
+      document.getElementById('usermgmt-phone').value = u.phone || '';
+      document.getElementById('usermgmt-email').value = u.email || '';
+      document.getElementById('usermgmt-role').value = (u.role || 'USER').toUpperCase();
+      document.getElementById('usermgmt-status').value = (u.status || 'ACTIVE').toUpperCase();
+      
+      const passInput = document.getElementById('usermgmt-pass');
+      passInput.value = '';
+      passInput.required = false;
+      document.getElementById('usermgmt-pass-label').innerHTML = `<i class="fas fa-key me-1 text-warning"></i>เปลี่ยนรหัสผ่าน (เว้นว่างหากไม่เปลี่ยน)`;
+      document.getElementById('usermgmt-pass-help').innerText = 'หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นว่างไว้';
+
+      const modalEl = document.getElementById('modal-user-mgmt');
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+
+    async function submitUserManagementForm() {
+      const mode = document.getElementById('usermgmt-mode').value;
+      const id = document.getElementById('usermgmt-id').value.trim();
+      const name = document.getElementById('usermgmt-name').value.trim();
+      const position = document.getElementById('usermgmt-pos').value.trim();
+      const phone = document.getElementById('usermgmt-phone').value.trim();
+      const email = document.getElementById('usermgmt-email').value.trim();
+      const role = document.getElementById('usermgmt-role').value;
+      const status = document.getElementById('usermgmt-status').value;
+      const password = document.getElementById('usermgmt-pass').value.trim();
+
+      if (!id || !name) {
+        Swal.fire('คำเตือน', 'กรุณากรอกรหัสผู้ใช้งานและชื่อ-นามสกุล', 'warning');
+        return;
+      }
+
+      if (mode === 'add' && !password) {
+        Swal.fire('คำเตือน', 'กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่', 'warning');
+        return;
+      }
+
+      const payload = { id, name, position, phone, email, role, status };
+      if (password) payload.password = password;
+
+      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      try {
+        const res = await apiCall('saveUser', payload);
+        if (res && res.success) {
+          const modalEl = document.getElementById('modal-user-mgmt');
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) modal.hide();
+
+          Swal.fire({
+            icon: 'success',
+            title: mode === 'add' ? 'เพิ่มผู้ใช้สำเร็จ' : 'บันทึกข้อมูลเรียบร้อย',
+            timer: 1500,
+            showConfirmButton: false
+          });
+
+          await fetchAllDataFast(true);
+          renderUsersTable();
+        } else {
+          Swal.fire('ข้อผิดพลาด', res ? res.error || res.message : 'บันทึกไม่สำเร็จ', 'error');
+        }
+      } catch (err) {
+        Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการบันทึก: ' + err.message, 'error');
+      }
+    }
+
+    async function promptResetUserPassword(userId, userName) {
+      const { value: newPass } = await Swal.fire({
+        title: `รีเซ็ตรหัสผ่าน`,
+        html: `กำหนดรหัสผ่านใหม่สำหรับ <strong>${escapeHtml(userName)}</strong> (รหัส: ${escapeHtml(userId)})`,
+        input: 'password',
+        inputPlaceholder: 'ระบุรหัสผ่านใหม่',
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกรหัสผ่าน',
+        cancelButtonText: 'ยกเลิก',
+        inputValidator: (val) => {
+          if (!val || !val.trim()) return 'กรุณาระบุรหัสผ่านใหม่!';
+          if (val.trim().length < 4) return 'รหัสผ่านควรมีความยาวอย่างน้อย 4 ตัวอักษร';
+        }
+      });
+
+      if (newPass) {
+        Swal.fire({ title: 'กำลังอัปเดตรหัสผ่าน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+          const res = await apiCall('saveUser', { id: userId, password: newPass.trim() });
+          if (res && res.success) {
+            Swal.fire('สำเร็จ', `เปลี่ยนรหัสผ่านสำหรับ ${userName} เรียบร้อยแล้ว`, 'success');
+            await fetchAllDataFast(true);
+          } else {
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปลี่ยนรหัสผ่านได้', 'error');
+          }
+        } catch (e) {
+          Swal.fire('ข้อผิดพลาด', e.message, 'error');
+        }
+      }
+    }
+
+    async function toggleUserStatus(userId, currentStatus) {
+      const newStatus = (currentStatus === 'ACTIVE') ? 'SUSPENDED' : 'ACTIVE';
+      const actionText = newStatus === 'ACTIVE' ? 'เปิดใช้งานบัญชี' : 'ระงับการใช้งานบัญชี';
+      
+      const confirm = await Swal.fire({
+        title: `ยืนยัน${actionText}?`,
+        text: newStatus === 'SUSPENDED' ? 'ผู้ใช้นี้จะไม่สามารถล็อกอินเข้าสู่ระบบได้ชั่วคราว' : 'ผู้ใช้นี้จะสามารถล็อกอินเข้าใช้งานได้ตามปกติ',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยัน',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: newStatus === 'SUSPENDED' ? '#d33' : '#3085d6'
+      });
+
+      if (confirm.isConfirmed) {
+        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+          const res = await apiCall('saveUser', { id: userId, status: newStatus });
+          if (res && res.success) {
+            Swal.fire('สำเร็จ', `${actionText}เรียบร้อยแล้ว`, 'success');
+            await fetchAllDataFast(true);
+            renderUsersTable();
+          } else {
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
+          }
+        } catch (e) {
+          Swal.fire('ข้อผิดพลาด', e.message, 'error');
+        }
+      }
+    }
+
+    async function deleteUser(userId) {
+      if (currentUser && String(userId) === String(currentUser.id)) {
+        Swal.fire('ข้อผิดพลาด', 'คุณไม่สามารถลบบัญชีของตนเองได้', 'error');
+        return;
+      }
+      const u = usersData.find(x => String(x.id) === String(userId));
+      const userName = u ? u.name : userId;
+
       const result = await Swal.fire({
         title: 'ยืนยันการลบผู้ใช้?',
-        text: "คุณจะไม่สามารถกู้คืนข้อมูลผู้ใช้นี้ได้!",
+        html: `คุณกำลังจะลบบัญชี <strong>${escapeHtml(userName)}</strong> (รหัส: ${escapeHtml(userId)})<br><span class="text-danger small">ข้อมูลบัญชีนี้จะถูกลบออกจากระบบอย่างถาวร</span>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
+        cancelButtonColor: '#6c757d',
         confirmButtonText: 'ใช่, ลบเลย!',
         cancelButtonText: 'ยกเลิก'
       });
@@ -7656,54 +8112,14 @@
       if (result.isConfirmed) {
         Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const res = await apiCall('deleteUser', userId);
-        if (res.success) {
+        if (res && res.success) {
           Swal.fire('ลบเรียบร้อย!', 'ผู้ใช้งานถูกลบออกจากระบบแล้ว', 'success');
-          loadUsersData();
+          await fetchAllDataFast(true);
+          renderUsersTable();
         } else {
-          Swal.fire('ข้อผิดพลาด', res.error || 'ไม่สามารถลบผู้ใช้งานได้', 'error');
+          Swal.fire('ข้อผิดพลาด', res ? res.error : 'ไม่สามารถลบผู้ใช้งานได้', 'error');
         }
       }
-    }
-
-    async function editUserRole(userId, currentRole) {
-      const { value: role } = await Swal.fire({
-        title: 'กำหนดสิทธิ์ผู้ใช้งาน',
-        input: 'select',
-        inputOptions: { 'user': 'ผู้ใช้งานทั่วไป (User)', 'admin': 'เจ้าหน้าที่พัสดุ (Admin)', 'superadmin': 'ผู้ดูแลระบบสูงสุด (Superadmin)' },
-        inputValue: currentRole,
-        showCancelButton: true
-      });
-
-      if (role) {
-        await apiCall('saveUser', { id: userId, role: role });
-        Swal.fire('อัปเดตเรียบร้อย', 'ปรับเปลี่ยนสิทธิ์เรียบร้อยแล้ว', 'success');
-        loadUsersData();
-      }
-    }
-
-    function openUserModal() {
-      Swal.fire({
-        title: 'เพิ่มผู้ใช้งานใหม่',
-        html: `
-          <input id="swal-uid" class="swal2-input" placeholder="รหัสผู้ใช้งาน (ID)">
-          <input id="swal-uname" class="swal2-input" placeholder="ชื่อ-นามสกุล">
-          <input id="swal-upass" class="swal2-input" placeholder="รหัสผ่าน" type="password">`,
-        showCancelButton: true,
-        confirmButtonText: 'บันทึก',
-        preConfirm: () => {
-          return {
-            id: document.getElementById('swal-uid').value.trim(),
-            name: document.getElementById('swal-uname').value.trim(),
-            password: document.getElementById('swal-upass').value.trim()
-          };
-        }
-      }).then(async (res) => {
-        if (res.isConfirmed && res.value.id) {
-          await apiCall('saveUser', res.value);
-          Swal.fire('สำเร็จ', 'เพิ่มผู้ใช้ใหม่เรียบร้อยแล้ว', 'success');
-          loadUsersData();
-        }
-      });
     }
 
     // ================= TAB 9: MATERIAL STOCK LEDGER (ผลการเบิกจ่ายวัสดุ / ใบสรุปผลการเบิกจ่ายพัสดุ A4 แนวนอน) =================
