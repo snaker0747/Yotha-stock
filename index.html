@@ -2290,7 +2290,7 @@
                     </label>
                     <div class="input-group">
                       <span class="input-group-text bg-primary text-white border-0 fw-bold px-3">฿</span>
-                      <input type="number" id="budget-amount-input" class="form-control form-control-ios fw-bold text-primary fs-5" placeholder="ระบุงบประมาณ เช่น 200000" min="0" step="1000" oninput="onBudgetAmountChange()">
+                      <input type="text" inputmode="decimal" id="budget-amount-input" class="form-control form-control-ios fw-bold text-primary fs-5" placeholder="ระบุงบประมาณ เช่น 200,000.00" oninput="formatBudgetInput(this)" onblur="formatBudgetInputBlur(this)" onfocus="this.select()">
                     </div>
                   </div>
                   <div class="col-12 col-lg-7">
@@ -8731,13 +8731,54 @@
       select.value = categories.includes(currentVal) ? currentVal : 'ALL';
     }
 
+    function formatMoneyNumber(num) {
+      if (num == null || isNaN(num)) return '0.00';
+      return Number(num).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatBudgetInput(input) {
+      if (!input) return;
+      let val = input.value.replace(/[^0-9.]/g, '');
+      const parts = val.split('.');
+      if (parts.length > 2) {
+        val = parts[0] + '.' + parts.slice(1).join('');
+      }
+      
+      const p = val.split('.');
+      let integerPart = p[0];
+      let decimalPart = p.length > 1 ? p[1].slice(0, 2) : null;
+
+      const formattedInt = integerPart ? integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+      
+      let displayVal = formattedInt;
+      if (p.length > 1) {
+        displayVal += '.' + (decimalPart !== null ? decimalPart : '');
+      }
+
+      input.value = displayVal;
+
+      const numVal = parseFloat(val) || 0;
+      budgetState.totalBudget = Math.max(0, numVal);
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+    }
+
+    function formatBudgetInputBlur(input) {
+      if (!input) return;
+      const numVal = parseFloat(input.value.replace(/,/g, '')) || 0;
+      budgetState.totalBudget = Math.max(0, numVal);
+      input.value = formatMoneyNumber(budgetState.totalBudget);
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+    }
+
     function renderBudgetTab() {
       initBudgetStateFromCache();
       populateBudgetCategoryFilter();
       
       const budgetInput = document.getElementById('budget-amount-input');
       if (budgetInput) {
-        budgetInput.value = budgetState.totalBudget || 0;
+        budgetInput.value = formatMoneyNumber(budgetState.totalBudget || 0);
       }
 
       calculateBudgetTotals();
@@ -8748,16 +8789,14 @@
 
     function onBudgetAmountChange() {
       const input = document.getElementById('budget-amount-input');
-      const val = parseFloat(input?.value) || 0;
-      budgetState.totalBudget = Math.max(0, val);
-      saveBudgetStateToCache();
-      calculateBudgetTotals();
+      if (input) formatBudgetInput(input);
     }
 
     function setBudgetPreset(amount) {
-      budgetState.totalBudget = Number(amount) || 0;
+      const num = Number(amount) || 0;
+      budgetState.totalBudget = num;
       const input = document.getElementById('budget-amount-input');
-      if (input) input.value = budgetState.totalBudget;
+      if (input) input.value = formatMoneyNumber(num);
       saveBudgetStateToCache();
       calculateBudgetTotals();
 
@@ -8765,7 +8804,7 @@
         toast: true,
         position: 'top-end',
         icon: 'success',
-        title: `ตั้งวงเงินงบประมาณ ฿${amount.toLocaleString()} บาท เรียบร้อยแล้ว`,
+        title: `ตั้งวงเงินงบประมาณ ฿${formatMoneyNumber(num)} บาท เรียบร้อยแล้ว`,
         showConfirmButton: false,
         timer: 1200
       });
