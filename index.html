@@ -1354,62 +1354,107 @@
       }
     }
 
-    /* ================= BUDGET PLANNER STICKY HUD & HEADER ================= */
-    .budget-sticky-hud {
-      position: sticky;
-      top: 76px;
-      z-index: 95;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      border: 1.5px solid rgba(0, 122, 255, 0.18);
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-      padding: 14px 18px;
-      margin-bottom: 16px;
+    /* ================= BUDGET PLANNER FLOATING DOCK & STICKY TABLE HEADER ================= */
+    .budget-hud-card {
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 16px;
+      padding: 14px 16px;
       transition: all 0.25s ease;
     }
-    body.dark-theme .budget-sticky-hud {
-      background: rgba(20, 26, 44, 0.94);
-      border-color: rgba(255, 255, 255, 0.12);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    }
-    .budget-hud-card {
-      background: rgba(255, 255, 255, 0.7);
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      border-radius: 14px;
-      padding: 10px 14px;
-      transition: all 0.2s ease;
-    }
     body.dark-theme .budget-hud-card {
-      background: rgba(30, 36, 54, 0.7);
+      background: rgba(30, 36, 54, 0.75);
       border-color: rgba(255, 255, 255, 0.08);
     }
     .budget-hud-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
     }
     .budget-table-sticky-header th {
       position: sticky;
-      top: 0;
-      z-index: 5;
-      background: rgba(248, 250, 252, 0.96) !important;
-      backdrop-filter: blur(10px);
+      top: 76px;
+      z-index: 10;
+      background: #ffffff !important;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
       border-bottom: 2px solid #dee2e6 !important;
     }
     body.dark-theme .budget-table-sticky-header th {
-      background: rgba(26, 32, 48, 0.96) !important;
+      background: #1c2333 !important;
       color: #e8edf8 !important;
       border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    }
+    .budget-floating-dock {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 1240px;
+      z-index: 1050;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1.5px solid rgba(0, 122, 255, 0.25);
+      border-radius: 20px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 122, 255, 0.12);
+      padding: 10px 18px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: budgetDockSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes budgetDockSlideUp {
+      from { transform: translate(-50%, 40px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    body.dark-theme .budget-floating-dock {
+      background: rgba(20, 26, 44, 0.96);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .budget-dock-pill {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.04);
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    body.dark-theme .budget-dock-pill {
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .budget-dock-pill .dock-label {
+      font-size: 0.78rem;
+      color: #6c757d;
+      margin-right: 6px;
+      font-weight: 500;
+    }
+    body.dark-theme .budget-dock-pill .dock-label {
+      color: #a0aec0;
+    }
+    .budget-dock-pill .dock-val {
+      font-weight: 700;
+      font-size: 0.95rem;
     }
     @media (max-width: 991px) {
-      .budget-sticky-hud {
+      .budget-table-sticky-header th {
         top: 60px;
-        padding: 10px 12px;
+      }
+      .budget-floating-dock {
+        bottom: 74px; /* Above mobile bottom nav */
+        width: calc(100% - 16px);
+        padding: 8px 12px;
         border-radius: 16px;
       }
-      .budget-hud-card {
-        padding: 8px 10px;
+      .budget-dock-pill {
+        padding: 4px 8px;
+        font-size: 0.76rem;
+      }
+      .budget-dock-pill .dock-val {
+        font-size: 0.82rem;
+      }
+      .budget-dock-pill .dock-label {
+        font-size: 0.72rem;
       }
     }
   </style>
@@ -2168,7 +2213,7 @@
           </div>
 
           <!-- TAB 10: BUDGET MANAGEMENT & PROCUREMENT PLANNER (การบริหารงบประมาณ) -->
-          <div id="tab-budget" class="tab-content-page hidden">
+          <div id="tab-budget" class="tab-content-page hidden pb-5 mb-5">
             <!-- Header Toolbar Card -->
             <div class="glass-card p-3 p-md-4 mb-3 mb-md-4">
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
@@ -2233,52 +2278,52 @@
               </div>
             </div>
 
-            <!-- Sticky Budget KPI & Summary HUD Bar -->
-            <div class="budget-sticky-hud">
+            <!-- Budget KPI & Summary Panel (Spacious Non-Sticky Layout) -->
+            <div class="glass-card p-3 p-md-4 mb-3 mb-md-4" id="budget-kpi-summary-panel">
               <!-- 4 Live KPI Cards -->
-              <div class="row g-2 align-items-stretch">
+              <div class="row g-2 g-md-3 align-items-stretch mb-3">
                 <div class="col-6 col-lg-3">
                   <div class="budget-hud-card text-center h-100">
-                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.78rem;">วงเงินงบประมาณที่ตั้งไว้</span>
-                    <h3 class="fw-bold text-primary my-1 fs-5 fs-md-4 text-truncate" id="budget-kpi-total">฿0.00</h3>
+                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.82rem;">วงเงินงบประมาณที่ตั้งไว้</span>
+                    <h3 class="fw-bold text-primary my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-total">฿0.00</h3>
                     <span class="badge badge-ios badge-ios-primary py-0.5 px-2" style="font-size: 0.72rem;">งบประมาณรวม</span>
                   </div>
                 </div>
                 <div class="col-6 col-lg-3">
                   <div class="budget-hud-card text-center h-100">
-                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.78rem;">ยอดประมาณการจัดซื้อ</span>
-                    <h3 class="fw-bold text-info my-1 fs-5 fs-md-4 text-truncate" id="budget-kpi-spent">฿0.00</h3>
+                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.82rem;">ยอดประมาณการจัดซื้อ</span>
+                    <h3 class="fw-bold text-info my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-spent">฿0.00</h3>
                     <span class="badge badge-ios badge-ios-info py-0.5 px-2" id="budget-kpi-spent-percent" style="font-size: 0.72rem;">0% ของงบ</span>
                   </div>
                 </div>
                 <div class="col-6 col-lg-3">
                   <div class="budget-hud-card text-center h-100" id="budget-kpi-remaining-card">
-                    <span class="small text-muted-ios d-block mb-1" id="budget-kpi-remaining-label" style="font-size: 0.78rem;">งบประมาณคงเหลือ</span>
-                    <h3 class="fw-bold text-success my-1 fs-5 fs-md-4 text-truncate" id="budget-kpi-remaining">฿0.00</h3>
+                    <span class="small text-muted-ios d-block mb-1" id="budget-kpi-remaining-label" style="font-size: 0.82rem;">งบประมาณคงเหลือ</span>
+                    <h3 class="fw-bold text-success my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-remaining">฿0.00</h3>
                     <span class="badge badge-ios badge-ios-success py-0.5 px-2" id="budget-kpi-remaining-badge" style="font-size: 0.72rem;">พร้อมใช้</span>
                   </div>
                 </div>
                 <div class="col-6 col-lg-3">
                   <div class="budget-hud-card text-center h-100">
-                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.78rem;">รายการที่เลือกซื้อ</span>
-                    <h3 class="fw-bold text-dark-emphasis my-1 fs-5 fs-md-4 text-truncate" id="budget-kpi-count">0 / 0</h3>
+                    <span class="small text-muted-ios d-block mb-1" style="font-size: 0.82rem;">รายการที่เลือกซื้อ</span>
+                    <h3 class="fw-bold text-dark-emphasis my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-count">0 / 0</h3>
                     <span class="badge badge-ios badge-ios-secondary py-0.5 px-2" id="budget-kpi-units-badge" style="font-size: 0.72rem;">0 ชิ้น</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Compact Progress Bar & Dynamic Status Line -->
-              <div class="mt-2.5 pt-2 border-top">
-                <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
+              <!-- Progress Bar & Dynamic Status Line -->
+              <div class="pt-2 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
                   <span id="budget-progress-label"><i class="fas fa-chart-pie me-1 text-primary"></i>สัดส่วนการใช้งบประมาณ:</span>
                   <span id="budget-progress-percent" class="fw-bold text-primary">0%</span>
                 </div>
-                <div class="progress" style="height: 10px; border-radius: 6px; background: rgba(0,0,0,0.08); overflow: hidden;">
+                <div class="progress" style="height: 12px; border-radius: 8px; background: rgba(0,0,0,0.06); overflow: hidden;">
                   <div id="budget-progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%; transition: width 0.3s ease, background-color 0.3s ease;"></div>
                 </div>
                 <!-- Live Alert Box -->
-                <div id="budget-alert-box" class="mt-2 p-2 rounded-3 d-flex align-items-center gap-2 small" style="background: rgba(0, 122, 255, 0.08); border-left: 3.5px solid var(--ios-primary); color: #004085;">
-                  <i class="fas fa-info-circle fs-6 text-primary flex-shrink-0"></i>
+                <div id="budget-alert-box" class="mt-3 p-2.5 rounded-3 d-flex align-items-center gap-2 small" style="background: rgba(0, 122, 255, 0.08); border-left: 4px solid var(--ios-primary); color: #004085;">
+                  <i class="fas fa-info-circle fs-5 text-primary flex-shrink-0"></i>
                   <span id="budget-alert-text">กรุณาระบุวงเงินงบประมาณ และเลือกรายการพัสดุที่ต้องการจัดซื้อเพื่อเริ่มการวางแผน</span>
                 </div>
               </div>
@@ -2337,6 +2382,48 @@
                     <!-- Footer totals dynamically updated -->
                   </tfoot>
                 </table>
+              </div>
+            </div>
+
+            <!-- Floating Smart Budget Summary Dock (Always visible when scrolling) -->
+            <div id="budget-floating-dock" class="budget-floating-dock">
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100">
+                <!-- 4 Live Metric Pills -->
+                <div class="d-flex align-items-center flex-wrap gap-2 gap-md-3">
+                  <!-- Metric 1: วงเงินงบประมาณ -->
+                  <div class="budget-dock-pill">
+                    <span class="dock-label"><i class="fas fa-wallet text-primary me-1"></i>งบประมาณ:</span>
+                    <span class="dock-val text-primary" id="budget-dock-total">฿0.00</span>
+                  </div>
+                  <!-- Metric 2: ยอดจัดซื้อรวม -->
+                  <div class="budget-dock-pill">
+                    <span class="dock-label"><i class="fas fa-shopping-cart text-info me-1"></i>ยอดจัดซื้อ:</span>
+                    <span class="dock-val text-info" id="budget-dock-spent">฿0.00</span>
+                    <span class="badge badge-ios badge-ios-info ms-1" id="budget-dock-spent-percent" style="font-size:0.72rem;">0%</span>
+                  </div>
+                  <!-- Metric 3: คงเหลือ / เกินงบ -->
+                  <div class="budget-dock-pill" id="budget-dock-remaining-pill">
+                    <span class="dock-label" id="budget-dock-remaining-label"><i class="fas fa-check-circle text-success me-1"></i>คงเหลือ:</span>
+                    <span class="dock-val text-success" id="budget-dock-remaining">฿0.00</span>
+                    <span class="badge badge-ios badge-ios-success ms-1" id="budget-dock-remaining-badge" style="font-size:0.72rem;">พร้อมใช้</span>
+                  </div>
+                  <!-- Metric 4: รายการ / ชิ้น -->
+                  <div class="budget-dock-pill d-none d-sm-flex">
+                    <span class="dock-label"><i class="fas fa-boxes text-secondary me-1"></i>เลือกแล้ว:</span>
+                    <span class="dock-val text-dark-emphasis" id="budget-dock-count">0 รายการ</span>
+                    <span class="badge badge-ios badge-ios-secondary ms-1" id="budget-dock-units" style="font-size:0.72rem;">0 ชิ้น</span>
+                  </div>
+                </div>
+
+                <!-- Right Action Buttons -->
+                <div class="d-flex align-items-center gap-1.5 ms-auto">
+                  <button type="button" class="btn btn-ios btn-ios-success btn-sm d-flex align-items-center gap-1 px-2.5 py-1.5" style="font-size:0.82rem;" onclick="exportBudgetPlanToCSV()" title="ส่งออก Excel / CSV">
+                    <i class="fas fa-file-excel"></i><span class="d-none d-md-inline">ส่งออก CSV</span>
+                  </button>
+                  <button type="button" class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center gap-1 px-2.5 py-1.5" style="font-size:0.82rem;" onclick="printBudgetProcurementPlan()" title="พิมพ์แผนจัดซื้อ">
+                    <i class="fas fa-print"></i><span class="d-none d-md-inline">พิมพ์แผน (A4)</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -8024,6 +8111,46 @@
 
       // 4. Update Table Footer
       updateBudgetTableFooter(selectedCount, totalUnits, totalSpent, remaining, isOver);
+
+      // 5. Floating Smart Budget Dock
+      const dockTotal = document.getElementById('budget-dock-total');
+      const dockSpent = document.getElementById('budget-dock-spent');
+      const dockSpentPercent = document.getElementById('budget-dock-spent-percent');
+      const dockRemaining = document.getElementById('budget-dock-remaining');
+      const dockRemainingLabel = document.getElementById('budget-dock-remaining-label');
+      const dockRemainingBadge = document.getElementById('budget-dock-remaining-badge');
+      const dockRemainingPill = document.getElementById('budget-dock-remaining-pill');
+      const dockCount = document.getElementById('budget-dock-count');
+      const dockUnits = document.getElementById('budget-dock-units');
+
+      if (dockTotal) dockTotal.innerText = `฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      if (dockSpent) dockSpent.innerText = `฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      if (dockSpentPercent) dockSpentPercent.innerText = `${utilPercent.toFixed(1)}%`;
+
+      if (dockRemaining) {
+        if (isOver) {
+          dockRemaining.innerText = `฿${Math.abs(remaining).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+          dockRemaining.className = 'dock-val text-danger';
+          if (dockRemainingLabel) dockRemainingLabel.innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>เกินงบ:';
+          if (dockRemainingBadge) {
+            dockRemainingBadge.className = 'badge badge-ios badge-ios-danger ms-1';
+            dockRemainingBadge.innerText = 'เกินงบ';
+          }
+          if (dockRemainingPill) dockRemainingPill.style.border = '1px solid #ff3b30';
+        } else {
+          dockRemaining.innerText = `฿${remaining.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+          dockRemaining.className = 'dock-val text-success';
+          if (dockRemainingLabel) dockRemainingLabel.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>คงเหลือ:';
+          if (dockRemainingBadge) {
+            dockRemainingBadge.className = 'badge badge-ios badge-ios-success ms-1';
+            dockRemainingBadge.innerText = 'พร้อมใช้';
+          }
+          if (dockRemainingPill) dockRemainingPill.style.border = '';
+        }
+      }
+
+      if (dockCount) dockCount.innerText = `${selectedCount} รายการ`;
+      if (dockUnits) dockUnits.innerText = `${totalUnits.toLocaleString()} ชิ้น`;
     }
 
     function updateBudgetTableFooter(selectedCount, totalUnits, totalSpent, remaining, isOver) {
