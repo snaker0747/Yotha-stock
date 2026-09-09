@@ -1517,6 +1517,9 @@
             <a class="nav-item-ios" id="menu-stockledger" onclick="switchTab('stockledger')">
               <i class="fas fa-file-signature"></i> ผลการเบิกจ่ายวัสดุ
             </a>
+            <a class="nav-item-ios" id="menu-budget" onclick="switchTab('budget')">
+              <i class="fas fa-coins"></i> การบริหารงบประมาณ
+            </a>
             <a class="nav-item-ios" id="menu-users" onclick="switchTab('users')">
               <i class="fas fa-users-cog"></i> ผู้ใช้งาน & โปรไฟล์
             </a>
@@ -2105,6 +2108,177 @@
             </div>
           </div>
 
+          <!-- TAB 10: BUDGET MANAGEMENT & PROCUREMENT PLANNER (การบริหารงบประมาณ) -->
+          <div id="tab-budget" class="tab-content-page hidden">
+            <!-- Header Toolbar Card -->
+            <div class="glass-card p-3 p-md-4 mb-3 mb-md-4">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div>
+                  <h4 class="fw-bold mb-1 fs-5 fs-md-4"><i class="fas fa-coins text-primary me-2"></i>การบริหารงบประมาณ (ระบบวางแผนจัดซื้อพัสดุ)</h4>
+                  <p class="text-muted-ios small mb-0">จำลองและวางแผนจัดซื้อพัสดุตามวงเงินงบประมาณที่ได้รับจัดสรร • คำนวณยอดเงินและรายการวัสดุแบบเรียลไทม์</p>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap w-100 w-md-auto">
+                  <button class="btn btn-ios btn-ios-success btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="exportBudgetPlanToCSV()">
+                    <i class="fas fa-file-excel me-1"></i>ส่งออก Excel / CSV
+                  </button>
+                  <button class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="printBudgetProcurementPlan()">
+                    <i class="fas fa-print me-1"></i>พิมพ์แผนจัดซื้อ (A4 แนวนอน)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Budget Input & Controls Card -->
+            <div class="glass-card p-3 p-md-4 mb-3 mb-md-4" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(255, 255, 255, 0.7) 100%);">
+              <div class="row g-3 align-items-center mb-3">
+                <div class="col-12 col-lg-5">
+                  <label class="form-label small fw-bold text-dark-emphasis mb-1">
+                    <i class="fas fa-wallet text-primary me-1"></i>กำหนดวงเงินงบประมาณจัดซื้อ (บาท):
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-primary text-white border-0 fw-bold px-3">฿</span>
+                    <input type="number" id="budget-amount-input" class="form-control form-control-ios fw-bold text-primary fs-5" placeholder="ระบุงบประมาณ เช่น 200000" min="0" step="1000" oninput="onBudgetAmountChange()">
+                  </div>
+                </div>
+                <div class="col-12 col-lg-7">
+                  <label class="form-label small fw-semibold text-muted-ios mb-1">
+                    <i class="fas fa-magic me-1"></i>เลือกวงเงินด่วน (Quick Presets):
+                  </label>
+                  <div class="d-flex flex-wrap gap-1.5">
+                    <button type="button" class="btn btn-sm btn-ios btn-ios-secondary py-1 px-2.5" onclick="setBudgetPreset(50000)">฿50,000</button>
+                    <button type="button" class="btn btn-sm btn-ios btn-ios-secondary py-1 px-2.5" onclick="setBudgetPreset(100000)">฿100,000</button>
+                    <button type="button" class="btn btn-sm btn-ios btn-ios-secondary py-1 px-2.5" onclick="setBudgetPreset(200000)">฿200,000</button>
+                    <button type="button" class="btn btn-sm btn-ios btn-ios-secondary py-1 px-2.5" onclick="setBudgetPreset(300000)">฿300,000</button>
+                    <button type="button" class="btn btn-sm btn-ios btn-ios-secondary py-1 px-2.5" onclick="setBudgetPreset(500000)">฿500,000</button>
+                    <button type="button" class="btn btn-sm btn-ios btn-ios-secondary py-1 px-2.5" onclick="setBudgetPreset(1000000)">฿1,000,000</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Helper Action Buttons -->
+              <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3 border-top">
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-sm btn-ios btn-ios-warning d-flex align-items-center gap-1" onclick="autoSelectLowStockBudget()">
+                    <i class="fas fa-bolt"></i>เลือกเฉพาะพัสดุที่ขาด (≤ Min)
+                  </button>
+                  <button type="button" class="btn btn-sm btn-ios btn-ios-secondary d-flex align-items-center gap-1" onclick="selectAllBudgetItems()">
+                    <i class="fas fa-check-double"></i>เลือกทั้งหมด
+                  </button>
+                  <button type="button" class="btn btn-sm btn-ios btn-ios-secondary text-danger d-flex align-items-center gap-1" onclick="clearBudgetSelection()">
+                    <i class="fas fa-times-circle"></i>ล้างการเลือกทั้งหมด
+                  </button>
+                </div>
+                <div class="small text-muted-ios" id="budget-selection-hint">
+                  <i class="fas fa-info-circle me-1"></i>ติ๊กเลือกพัสดุและปรับจำนวนเพื่อคำนวณงบ
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 Live KPI Cards -->
+            <div class="row g-2 g-md-3 mb-3">
+              <div class="col-6 col-lg-3">
+                <div class="glass-card p-3 text-center h-100">
+                  <span class="small text-muted-ios d-block mb-1">วงเงินงบประมาณที่ตั้งไว้</span>
+                  <h3 class="fw-bold text-primary my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-total">฿0.00</h3>
+                  <span class="badge badge-ios badge-ios-primary py-0.5 px-2" style="font-size: 0.72rem;">งบประมาณรวม</span>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="glass-card p-3 text-center h-100">
+                  <span class="small text-muted-ios d-block mb-1">ยอดประมาณการจัดซื้อ</span>
+                  <h3 class="fw-bold text-info my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-spent">฿0.00</h3>
+                  <span class="badge badge-ios badge-ios-info py-0.5 px-2" id="budget-kpi-spent-percent" style="font-size: 0.72rem;">0% ของงบ</span>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="glass-card p-3 text-center h-100" id="budget-kpi-remaining-card">
+                  <span class="small text-muted-ios d-block mb-1" id="budget-kpi-remaining-label">งบประมาณคงเหลือ</span>
+                  <h3 class="fw-bold text-success my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-remaining">฿0.00</h3>
+                  <span class="badge badge-ios badge-ios-success py-0.5 px-2" id="budget-kpi-remaining-badge" style="font-size: 0.72rem;">พร้อมใช้</span>
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <div class="glass-card p-3 text-center h-100">
+                  <span class="small text-muted-ios d-block mb-1">รายการที่เลือกซื้อ</span>
+                  <h3 class="fw-bold text-dark-emphasis my-1 fs-4 fs-md-3 text-truncate" id="budget-kpi-count">0 / 0</h3>
+                  <span class="badge badge-ios badge-ios-secondary py-0.5 px-2" id="budget-kpi-units-badge" style="font-size: 0.72rem;">0 ชิ้น</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Budget Utilization Progress Bar & Dynamic Alert Box -->
+            <div class="glass-card p-3 mb-3 mb-md-4">
+              <div class="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
+                <span id="budget-progress-label"><i class="fas fa-chart-pie me-1 text-primary"></i>สัดส่วนการใช้งบประมาณ:</span>
+                <span id="budget-progress-percent" class="fw-bold text-primary">0%</span>
+              </div>
+              <div class="progress" style="height: 12px; border-radius: 8px; background: rgba(0,0,0,0.06); overflow: hidden;">
+                <div id="budget-progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%; transition: width 0.3s ease, background-color 0.3s ease;"></div>
+              </div>
+              <!-- Live Alert Box -->
+              <div id="budget-alert-box" class="mt-3 p-2.5 rounded-3 d-flex align-items-center gap-2 small" style="background: rgba(0, 122, 255, 0.08); border-left: 4px solid var(--ios-primary); color: #004085;">
+                <i class="fas fa-info-circle fs-5 text-primary flex-shrink-0"></i>
+                <span id="budget-alert-text">กรุณาระบุวงเงินงบประมาณ และเลือกรายการพัสดุที่ต้องการจัดซื้อเพื่อเริ่มการวางแผน</span>
+              </div>
+            </div>
+
+            <!-- Filter & Search Controls -->
+            <div class="glass-card p-3 mb-3">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-4">
+                  <select id="budget-filter-category" class="form-select form-control-ios" onchange="renderBudgetTable()">
+                    <option value="ALL">-- ทุกหมวดหมู่พัสดุ --</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-4">
+                  <select id="budget-filter-status" class="form-select form-control-ios" onchange="renderBudgetTable()">
+                    <option value="ALL">-- แสดงพัสดุทุกสถานะ --</option>
+                    <option value="SELECTED_ONLY">✓ แสดงเฉพาะรายการที่เลือกจัดซื้อ</option>
+                    <option value="LOW_ONLY">⚡ เฉพาะพัสดุที่ต่ำกว่าเกณฑ์ Min (≤ Min)</option>
+                    <option value="OUT_ONLY">🔴 เฉพาะพัสดุหมดคลัง (0 ชิ้น)</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="position-relative">
+                    <i class="fas fa-search position-absolute text-muted-ios" style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem;"></i>
+                    <input type="text" id="budget-search" class="form-control form-control-ios ps-5" placeholder="ค้นหารหัส หรือชื่อพัสดุ..." oninput="debouncedRenderBudgetTable()">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Interactive Procurement Items Table -->
+            <div class="glass-card p-3 p-md-4">
+              <div class="table-responsive">
+                <table class="table table-ios w-100 align-middle" id="budget-planner-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 44px; text-align: center;">
+                        <input type="checkbox" id="budget-select-all-cb" class="form-check-input" style="cursor: pointer; width: 1.15em; height: 1.15em;" onchange="toggleSelectAllBudgetCheckbox(this.checked)" title="เลือก/ยกเลิกทั้งหมด">
+                      </th>
+                      <th style="min-width: 50px;" class="text-center">ลำดับ</th>
+                      <th style="min-width: 90px;" class="text-center">รหัส</th>
+                      <th style="min-width: 220px;">รายการพัสดุ</th>
+                      <th style="min-width: 140px;">หมวดหมู่</th>
+                      <th style="min-width: 110px;" class="text-center">สต๊อกคงเหลือ</th>
+                      <th style="min-width: 100px;" class="text-center">Min / Max</th>
+                      <th style="min-width: 110px;" class="text-end">ราคา/หน่วย</th>
+                      <th style="min-width: 160px;" class="text-center">จำนวนที่ต้องการซื้อ</th>
+                      <th style="min-width: 130px;" class="text-end">รวมเป็นเงิน (บาท)</th>
+                      <th style="min-width: 100px;" class="text-center">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="budget-table-body">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                  <tfoot id="budget-table-footer" style="background: rgba(0, 122, 255, 0.05); font-weight: bold;">
+                    <!-- Footer totals dynamically updated -->
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -2134,6 +2308,10 @@
       <a class="mobile-nav-item" id="mob-menu-stockledger" onclick="switchTab('stockledger')">
         <i class="fas fa-file-signature"></i>
         <span>ผลการเบิก</span>
+      </a>
+      <a class="mobile-nav-item" id="mob-menu-budget" onclick="switchTab('budget')">
+        <i class="fas fa-coins"></i>
+        <span>งบประมาณ</span>
       </a>
       <a class="mobile-nav-item" id="mob-menu-users" onclick="switchTab('users')">
         <i class="fas fa-user-circle"></i>
@@ -2892,6 +3070,7 @@
         populateStockLogCategoryFilter();
         populateInventoryCategoryFilter();
         populateStockViewCatFilter();
+        populateBudgetCategoryFilter();
         renderMaterialGrid();
         checkAndGenerateNotifs();
         return true;
@@ -2916,6 +3095,7 @@
         populateStockLogCategoryFilter();
         populateInventoryCategoryFilter();
         populateStockViewCatFilter();
+        populateBudgetCategoryFilter();
         renderMaterialGrid();
         checkAndGenerateNotifs();
         updateNotifBadge();
@@ -3034,6 +3214,7 @@
       if (tabName === 'users') renderUsersTable();
       if (tabName === 'stockview') renderStockView();
       if (tabName === 'stockledger') renderStockLedgerTab();
+      if (tabName === 'budget') renderBudgetTab();
     }
 
     // ================= TAB 8: STOCK IN / RESTOCK AUDIT LOGS =================
@@ -7379,6 +7560,848 @@
           }, 50);
         }
       });
+    }
+
+    // ================= TAB 10: BUDGET MANAGEMENT & PROCUREMENT PLANNER (การบริหารงบประมาณ) =================
+    const BUDGET_STATE_KEY = 'rayong_budget_plan_state';
+    let budgetState = {
+      totalBudget: 200000,
+      selectedItems: {} // [itemId]: { selected: boolean, qty: number }
+    };
+
+    function initBudgetStateFromCache() {
+      try {
+        const saved = localStorage.getItem(BUDGET_STATE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            budgetState.totalBudget = (parsed.totalBudget != null && !isNaN(Number(parsed.totalBudget))) ? Number(parsed.totalBudget) : 200000;
+            budgetState.selectedItems = parsed.selectedItems || {};
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load budget state from cache:", e);
+      }
+
+      // Default initial state if none exists: auto-select low stock items
+      budgetState = { totalBudget: 200000, selectedItems: {} };
+      if (itemsData && itemsData.length > 0) {
+        itemsData.forEach(it => {
+          const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+          const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
+          const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+          if (rem <= minVal) {
+            const reqQty = Math.max(1, maxVal - rem);
+            budgetState.selectedItems[it.id] = { selected: true, qty: reqQty };
+          }
+        });
+      }
+    }
+
+    function saveBudgetStateToCache() {
+      try {
+        localStorage.setItem(BUDGET_STATE_KEY, JSON.stringify(budgetState));
+      } catch (e) {
+        console.warn("Could not save budget state to cache:", e);
+      }
+    }
+
+    function populateBudgetCategoryFilter() {
+      const select = document.getElementById('budget-filter-category');
+      if (!select || !itemsData) return;
+      const currentVal = select.value || 'ALL';
+      const categories = Array.from(new Set(itemsData.map(i => i.category).filter(Boolean))).sort();
+      let html = '<option value="ALL">-- ทุกหมวดหมู่พัสดุ --</option>';
+      categories.forEach(c => {
+        const count = itemsData.filter(i => i.category === c).length;
+        html += `<option value="${c}">${c} (${count})</option>`;
+      });
+      select.innerHTML = html;
+      select.value = categories.includes(currentVal) ? currentVal : 'ALL';
+    }
+
+    function renderBudgetTab() {
+      initBudgetStateFromCache();
+      populateBudgetCategoryFilter();
+      
+      const budgetInput = document.getElementById('budget-amount-input');
+      if (budgetInput) {
+        budgetInput.value = budgetState.totalBudget || 0;
+      }
+
+      calculateBudgetTotals();
+      renderBudgetTable();
+    }
+
+    const debouncedRenderBudgetTable = debounce(renderBudgetTable, 120);
+
+    function onBudgetAmountChange() {
+      const input = document.getElementById('budget-amount-input');
+      const val = parseFloat(input?.value) || 0;
+      budgetState.totalBudget = Math.max(0, val);
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+    }
+
+    function setBudgetPreset(amount) {
+      budgetState.totalBudget = Number(amount) || 0;
+      const input = document.getElementById('budget-amount-input');
+      if (input) input.value = budgetState.totalBudget;
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `ตั้งวงเงินงบประมาณ ฿${amount.toLocaleString()} บาท เรียบร้อยแล้ว`,
+        showConfirmButton: false,
+        timer: 1200
+      });
+    }
+
+    function autoSelectLowStockBudget() {
+      let count = 0;
+      (itemsData || []).forEach(it => {
+        const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+        const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
+        const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+        if (rem <= minVal) {
+          const needed = Math.max(1, maxVal - rem);
+          budgetState.selectedItems[it.id] = { selected: true, qty: needed };
+          count++;
+        }
+      });
+
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+      renderBudgetTable();
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `เลือกพัสดุที่ต่ำกว่าเกณฑ์ Min เรียบร้อยแล้ว (${count} รายการ)`,
+        showConfirmButton: false,
+        timer: 1800
+      });
+    }
+
+    function selectAllBudgetItems() {
+      const cat = document.getElementById('budget-filter-category')?.value || 'ALL';
+      const q = (document.getElementById('budget-search')?.value || '').trim().toLowerCase();
+
+      let targetItems = itemsData || [];
+      if (cat !== 'ALL') targetItems = targetItems.filter(i => i.category === cat);
+      if (q) {
+        targetItems = targetItems.filter(i => 
+          (i.name && i.name.toLowerCase().includes(q)) || 
+          (i.id && String(i.id).toLowerCase().includes(q)) ||
+          (i.category && i.category.toLowerCase().includes(q))
+        );
+      }
+
+      let count = 0;
+      targetItems.forEach(it => {
+        const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+        const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+        const curQty = budgetState.selectedItems[it.id]?.qty;
+        const qty = (curQty && curQty > 0) ? curQty : Math.max(1, maxVal - rem);
+        budgetState.selectedItems[it.id] = { selected: true, qty: qty };
+        count++;
+      });
+
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+      renderBudgetTable();
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `เลือกพัสดุทั้งหมดเรียบร้อยแล้ว (${count} รายการ)`,
+        showConfirmButton: false,
+        timer: 1500
+      });
+    }
+
+    function clearBudgetSelection() {
+      budgetState.selectedItems = {};
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+      renderBudgetTable();
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: 'ล้างการเลือกรายการพัสดุทั้งหมดแล้ว',
+        showConfirmButton: false,
+        timer: 1200
+      });
+    }
+
+    function toggleSelectAllBudgetCheckbox(checked) {
+      const cat = document.getElementById('budget-filter-category')?.value || 'ALL';
+      const q = (document.getElementById('budget-search')?.value || '').trim().toLowerCase();
+
+      let targetItems = itemsData || [];
+      if (cat !== 'ALL') targetItems = targetItems.filter(i => i.category === cat);
+      if (q) {
+        targetItems = targetItems.filter(i => 
+          (i.name && i.name.toLowerCase().includes(q)) || 
+          (i.id && String(i.id).toLowerCase().includes(q)) ||
+          (i.category && i.category.toLowerCase().includes(q))
+        );
+      }
+
+      targetItems.forEach(it => {
+        if (checked) {
+          const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+          const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+          const curQty = budgetState.selectedItems[it.id]?.qty;
+          const qty = (curQty && curQty > 0) ? curQty : Math.max(1, maxVal - rem);
+          budgetState.selectedItems[it.id] = { selected: true, qty: qty };
+        } else {
+          if (budgetState.selectedItems[it.id]) {
+            budgetState.selectedItems[it.id].selected = false;
+          }
+        }
+      });
+
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+      renderBudgetTable();
+    }
+
+    function onBudgetItemCheck(itemId, checked) {
+      if (!budgetState.selectedItems[itemId]) {
+        budgetState.selectedItems[itemId] = { selected: false, qty: 0 };
+      }
+      budgetState.selectedItems[itemId].selected = checked;
+
+      const it = (itemsData || []).find(i => String(i.id) === String(itemId));
+      if (checked && (!budgetState.selectedItems[itemId].qty || budgetState.selectedItems[itemId].qty <= 0)) {
+        if (it) {
+          const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+          const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+          budgetState.selectedItems[itemId].qty = Math.max(1, maxVal - rem);
+          const input = document.getElementById(`budget-qty-${itemId}`);
+          if (input) input.value = budgetState.selectedItems[itemId].qty;
+        } else {
+          budgetState.selectedItems[itemId].qty = 1;
+        }
+      }
+
+      // Update row visual highlight and subtotal
+      const row = document.getElementById(`budget-row-${itemId}`);
+      if (row) {
+        row.classList.toggle('table-active', checked);
+      }
+      updateBudgetItemRowSubtotal(itemId);
+
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+    }
+
+    function onBudgetItemQtyChange(itemId, newQty) {
+      const qty = Math.max(0, parseInt(newQty) || 0);
+      if (!budgetState.selectedItems[itemId]) {
+        budgetState.selectedItems[itemId] = { selected: false, qty: 0 };
+      }
+
+      budgetState.selectedItems[itemId].qty = qty;
+      const shouldSelect = qty > 0;
+      budgetState.selectedItems[itemId].selected = shouldSelect;
+
+      const cb = document.getElementById(`budget-cb-${itemId}`);
+      if (cb) cb.checked = shouldSelect;
+
+      const row = document.getElementById(`budget-row-${itemId}`);
+      if (row) row.classList.toggle('table-active', shouldSelect);
+
+      updateBudgetItemRowSubtotal(itemId);
+      saveBudgetStateToCache();
+      calculateBudgetTotals();
+    }
+
+    function adjustBudgetItemQty(itemId, delta) {
+      const curQty = budgetState.selectedItems[itemId]?.qty || 0;
+      const nextQty = Math.max(0, curQty + delta);
+      const input = document.getElementById(`budget-qty-${itemId}`);
+      if (input) input.value = nextQty;
+      onBudgetItemQtyChange(itemId, nextQty);
+    }
+
+    function fillBudgetItemToMax(itemId) {
+      const it = (itemsData || []).find(i => String(i.id) === String(itemId));
+      if (!it) return;
+      const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+      const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+      const needed = Math.max(1, maxVal - rem);
+
+      const input = document.getElementById(`budget-qty-${itemId}`);
+      if (input) input.value = needed;
+      onBudgetItemQtyChange(itemId, needed);
+
+      const cb = document.getElementById(`budget-cb-${itemId}`);
+      if (cb) cb.checked = true;
+    }
+
+    function updateBudgetItemRowSubtotal(itemId) {
+      const it = (itemsData || []).find(i => String(i.id) === String(itemId));
+      const subtotalEl = document.getElementById(`budget-subtotal-${itemId}`);
+      if (!it || !subtotalEl) return;
+      const isSelected = budgetState.selectedItems[itemId]?.selected;
+      const qty = isSelected ? (budgetState.selectedItems[itemId]?.qty || 0) : 0;
+      const price = Number(it.unitPrice != null ? it.unitPrice : (it.price || 0)) || 0;
+      const subtotal = qty * price;
+      subtotalEl.innerText = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      if (isSelected && qty > 0) {
+        subtotalEl.classList.add('text-primary', 'fw-bold');
+      } else {
+        subtotalEl.classList.remove('text-primary', 'fw-bold');
+      }
+    }
+
+    function calculateBudgetTotals() {
+      const totalBudget = Number(budgetState.totalBudget) || 0;
+      let totalSpent = 0;
+      let selectedCount = 0;
+      let totalUnits = 0;
+
+      (itemsData || []).forEach(it => {
+        const itemState = budgetState.selectedItems[it.id];
+        if (itemState && itemState.selected && itemState.qty > 0) {
+          const qty = Number(itemState.qty) || 0;
+          const price = Number(it.unitPrice != null ? it.unitPrice : (it.price || 0)) || 0;
+          totalSpent += qty * price;
+          selectedCount++;
+          totalUnits += qty;
+        }
+      });
+
+      const remaining = totalBudget - totalSpent;
+      const isOver = totalSpent > totalBudget;
+      const utilPercent = totalBudget > 0 ? ((totalSpent / totalBudget) * 100) : 0;
+
+      // 1. KPI Cards
+      const kpiTotal = document.getElementById('budget-kpi-total');
+      const kpiSpent = document.getElementById('budget-kpi-spent');
+      const kpiSpentPercent = document.getElementById('budget-kpi-spent-percent');
+      const kpiRemaining = document.getElementById('budget-kpi-remaining');
+      const kpiRemainingLabel = document.getElementById('budget-kpi-remaining-label');
+      const kpiRemainingBadge = document.getElementById('budget-kpi-remaining-badge');
+      const kpiRemainingCard = document.getElementById('budget-kpi-remaining-card');
+      const kpiCount = document.getElementById('budget-kpi-count');
+      const kpiUnitsBadge = document.getElementById('budget-kpi-units-badge');
+
+      if (kpiTotal) kpiTotal.innerText = `฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      if (kpiSpent) kpiSpent.innerText = `฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      if (kpiSpentPercent) kpiSpentPercent.innerText = `${utilPercent.toFixed(1)}% ของงบ`;
+
+      if (kpiRemaining) {
+        if (isOver) {
+          kpiRemaining.innerText = `฿${Math.abs(remaining).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+          kpiRemaining.className = 'fw-bold text-danger my-1 fs-4 fs-md-3 text-truncate';
+          if (kpiRemainingLabel) kpiRemainingLabel.innerHTML = '<span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>เกินงบประมาณ</span>';
+          if (kpiRemainingBadge) {
+            kpiRemainingBadge.className = 'badge badge-ios badge-ios-danger py-0.5 px-2';
+            kpiRemainingBadge.innerText = 'เกินงบที่ตั้งไว้';
+          }
+          if (kpiRemainingCard) kpiRemainingCard.style.border = '1.5px solid #ff3b30';
+        } else {
+          kpiRemaining.innerText = `฿${remaining.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+          kpiRemaining.className = 'fw-bold text-success my-1 fs-4 fs-md-3 text-truncate';
+          if (kpiRemainingLabel) kpiRemainingLabel.innerHTML = 'งบประมาณคงเหลือ';
+          if (kpiRemainingBadge) {
+            kpiRemainingBadge.className = 'badge badge-ios badge-ios-success py-0.5 px-2';
+            kpiRemainingBadge.innerText = 'พร้อมใช้จัดซื้อ';
+          }
+          if (kpiRemainingCard) kpiRemainingCard.style.border = '';
+        }
+      }
+
+      if (kpiCount) kpiCount.innerText = `${selectedCount} / ${(itemsData || []).length} รายการ`;
+      if (kpiUnitsBadge) kpiUnitsBadge.innerText = `${totalUnits.toLocaleString()} ชิ้น`;
+
+      // 2. Progress Bar
+      const progBar = document.getElementById('budget-progress-bar');
+      const progLabel = document.getElementById('budget-progress-percent');
+      if (progLabel) {
+        progLabel.innerText = `${utilPercent.toFixed(1)}% (${totalSpent.toLocaleString()} / ${totalBudget.toLocaleString()} บาท)`;
+      }
+      if (progBar) {
+        const barWidth = Math.min(100, utilPercent);
+        progBar.style.width = `${barWidth}%`;
+        if (isOver) {
+          progBar.className = 'progress-bar bg-danger progress-bar-striped progress-bar-animated';
+        } else if (utilPercent >= 80) {
+          progBar.className = 'progress-bar bg-warning';
+        } else {
+          progBar.className = 'progress-bar bg-success';
+        }
+      }
+
+      // 3. Alert Banner Box
+      const alertBox = document.getElementById('budget-alert-box');
+      const alertText = document.getElementById('budget-alert-text');
+      if (alertBox && alertText) {
+        if (totalSpent === 0) {
+          alertBox.style.background = 'rgba(0, 122, 255, 0.08)';
+          alertBox.style.borderLeftColor = 'var(--ios-primary)';
+          alertBox.style.color = '#004085';
+          alertText.innerHTML = 'กรุณาระบุวงเงินงบประมาณ และติ๊กเลือกรายการพัสดุที่ต้องการจัดซื้อเพื่อเริ่มการวางแผน';
+        } else if (isOver) {
+          alertBox.style.background = 'rgba(255, 59, 48, 0.12)';
+          alertBox.style.borderLeftColor = '#ff3b30';
+          alertBox.style.color = '#721c24';
+          alertText.innerHTML = `⚠️ <strong>ยอดจัดซื้อเกินงบประมาณที่กำหนดไป ฿${Math.abs(remaining).toLocaleString()} บาท</strong> (${utilPercent.toFixed(1)}% ของงบ) โปรดปรับลดจำนวนชิ้นหรือยกเลิกบางรายการ`;
+        } else {
+          alertBox.style.background = 'rgba(52, 199, 89, 0.12)';
+          alertBox.style.borderLeftColor = '#34c759';
+          alertBox.style.color = '#155724';
+          alertText.innerHTML = `✓ <strong>งบประมาณเพียงพอสำหรับการจัดซื้อ!</strong> ยอดจัดซื้อรวม ฿${totalSpent.toLocaleString()} บาท คิดเป็น ${utilPercent.toFixed(1)}% ของงบ (คงเหลือ ฿${remaining.toLocaleString()} บาท)`;
+        }
+      }
+
+      // 4. Update Table Footer
+      updateBudgetTableFooter(selectedCount, totalUnits, totalSpent, remaining, isOver);
+    }
+
+    function updateBudgetTableFooter(selectedCount, totalUnits, totalSpent, remaining, isOver) {
+      const footer = document.getElementById('budget-table-footer');
+      if (!footer) return;
+
+      const remainText = isOver 
+        ? `<span class="text-danger fw-bold">เกินงบ ฿${Math.abs(remaining).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>`
+        : `<span class="text-success fw-bold">คงเหลือ ฿${remaining.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+
+      footer.innerHTML = `
+        <tr style="border-top: 2px solid rgba(0, 122, 255, 0.2);">
+          <td colspan="5" class="text-end fw-bold py-3">
+            รวมรายการที่เลือกจัดซื้อทั้งสิ้น (${selectedCount} รายการ, ${totalUnits.toLocaleString()} ชิ้น):
+          </td>
+          <td colspan="3" class="text-center small py-3">
+            สถานะงบประมาณ: ${remainText}
+          </td>
+          <td class="text-center fw-bold py-3" style="color: #007aff; font-size: 1.05rem;">
+            ${totalUnits.toLocaleString()} ชิ้น
+          </td>
+          <td class="text-end fw-bold py-3" style="color: ${isOver ? '#ff3b30' : '#007aff'}; font-size: 1.15rem;">
+            ฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+          </td>
+          <td></td>
+        </tr>
+      `;
+    }
+
+    function renderBudgetTable() {
+      const tableBody = document.getElementById('budget-table-body');
+      if (!tableBody) return;
+
+      const catFilter = document.getElementById('budget-filter-category')?.value || 'ALL';
+      const statusFilter = document.getElementById('budget-filter-status')?.value || 'ALL';
+      const q = (document.getElementById('budget-search')?.value || '').trim().toLowerCase();
+
+      let items = (itemsData || []).filter(it => {
+        if (!it || !it.name || it.name === '-' || !it.id || it.id === 'null') return false;
+        return true;
+      });
+
+      // Filter by Category
+      if (catFilter !== 'ALL') {
+        items = items.filter(i => i.category === catFilter);
+      }
+
+      // Filter by Status
+      if (statusFilter === 'SELECTED_ONLY') {
+        items = items.filter(i => budgetState.selectedItems[i.id]?.selected);
+      } else if (statusFilter === 'LOW_ONLY') {
+        items = items.filter(i => {
+          const rem = Number(i.qtyRemaining != null ? i.qtyRemaining : (i.qty || 0)) || 0;
+          const minVal = (i.minStock != null && !isNaN(Number(i.minStock))) ? Number(i.minStock) : 5;
+          return rem <= minVal;
+        });
+      } else if (statusFilter === 'OUT_ONLY') {
+        items = items.filter(i => {
+          const rem = Number(i.qtyRemaining != null ? i.qtyRemaining : (i.qty || 0)) || 0;
+          return rem === 0;
+        });
+      }
+
+      // Filter by Search Query
+      if (q) {
+        items = items.filter(i => 
+          (i.name && i.name.toLowerCase().includes(q)) || 
+          (i.id && String(i.id).toLowerCase().includes(q)) ||
+          (i.category && i.category.toLowerCase().includes(q))
+        );
+      }
+
+      if (items.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="11" class="text-center py-5 text-muted-ios">
+              <i class="fas fa-box-open fa-3x mb-3 text-muted-ios opacity-50 d-block"></i>
+              <h6 class="fw-bold">ไม่พบรายการพัสดุตามเงื่อนไขที่เลือก</h6>
+              <span class="small">ลองเปลี่ยนหมวดหมู่ ล้างคำค้นหา หรือเลือกตัวกรองสถานะอื่น</span>
+            </td>
+          </tr>
+        `;
+        const selectAllCb = document.getElementById('budget-select-all-cb');
+        if (selectAllCb) selectAllCb.checked = false;
+        return;
+      }
+
+      // Sort items: Selected items first, then low stock items, then by name
+      items.sort((a, b) => {
+        const aSel = budgetState.selectedItems[a.id]?.selected ? 1 : 0;
+        const bSel = budgetState.selectedItems[b.id]?.selected ? 1 : 0;
+        if (aSel !== bSel) return bSel - aSel;
+
+        const aRem = Number(a.qtyRemaining != null ? a.qtyRemaining : (a.qty || 0)) || 0;
+        const bRem = Number(b.qtyRemaining != null ? b.qtyRemaining : (b.qty || 0)) || 0;
+        const aMin = (a.minStock != null && !isNaN(Number(a.minStock))) ? Number(a.minStock) : 5;
+        const bMin = (b.minStock != null && !isNaN(Number(b.minStock))) ? Number(b.minStock) : 5;
+        const aLow = aRem <= aMin ? 1 : 0;
+        const bLow = bRem <= bMin ? 1 : 0;
+        if (aLow !== bLow) return bLow - aLow;
+
+        return (a.name || '').localeCompare(b.name || '', 'th');
+      });
+
+      let allChecked = true;
+      let rowsHtml = '';
+
+      items.forEach((it, idx) => {
+        const isSelected = !!budgetState.selectedItems[it.id]?.selected;
+        if (!isSelected) allChecked = false;
+
+        const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+        const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
+        const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+        const price = Number(it.unitPrice != null ? it.unitPrice : (it.price || 0)) || 0;
+        const unitStr = it.unit || 'ชิ้น';
+
+        let itemQty = budgetState.selectedItems[it.id]?.qty;
+        if (itemQty == null) {
+          itemQty = rem <= minVal ? Math.max(1, maxVal - rem) : 0;
+        }
+
+        const subtotal = isSelected ? (itemQty * price) : 0;
+
+        let statusBadge = '<span class="badge badge-ios badge-ios-success py-1 px-2" style="font-size:0.75rem;">🟢 ปกติ</span>';
+        if (rem === 0) {
+          statusBadge = '<span class="badge badge-ios badge-ios-danger py-1 px-2" style="font-size:0.75rem;">🔴 หมดคลัง</span>';
+        } else if (rem <= minVal) {
+          statusBadge = '<span class="badge badge-ios badge-ios-warning py-1 px-2" style="font-size:0.75rem;">🟡 ควรเติม (≤ Min)</span>';
+        }
+
+        const imgThumb = it.image && it.image.length > 50 
+          ? `<img src="${it.image}" class="rounded-3 me-2" style="width:36px; height:36px; object-fit:cover; border:1px solid rgba(0,0,0,0.08);" alt="">`
+          : `<div class="rounded-3 me-2 d-inline-flex align-items-center justify-content-center bg-light text-muted" style="width:36px; height:36px; border:1px solid rgba(0,0,0,0.08);"><i class="fas fa-box small"></i></div>`;
+
+        rowsHtml += `
+          <tr id="budget-row-${it.id}" class="${isSelected ? 'table-active' : ''}">
+            <td class="text-center align-middle">
+              <input type="checkbox" id="budget-cb-${it.id}" class="form-check-input" style="cursor:pointer; width:1.2em; height:1.2em;" ${isSelected ? 'checked' : ''} onchange="onBudgetItemCheck('${it.id}', this.checked)">
+            </td>
+            <td class="text-center text-muted align-middle">${idx + 1}</td>
+            <td class="text-center fw-semibold align-middle"><span class="badge bg-light text-dark border">${it.id}</span></td>
+            <td class="align-middle">
+              <div class="d-flex align-items-center">
+                ${imgThumb}
+                <div>
+                  <div class="fw-bold text-dark-emphasis">${it.name}</div>
+                  <div class="small text-muted-ios" style="font-size:0.78rem;">หน่วยนับ: <strong>${unitStr}</strong></div>
+                </div>
+              </div>
+            </td>
+            <td class="align-middle small text-muted-ios">${it.category || '-'}</td>
+            <td class="text-center align-middle">
+              <div class="fw-bold fs-6">${rem.toLocaleString()} <span class="small fw-normal text-muted">${unitStr}</span></div>
+              ${statusBadge}
+            </td>
+            <td class="text-center align-middle small">
+              <span class="text-danger fw-semibold">Min: ${minVal}</span> / <span class="text-primary fw-semibold">Max: ${maxVal}</span>
+            </td>
+            <td class="text-end align-middle fw-semibold">฿${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="align-middle">
+              <div class="input-group input-group-sm justify-content-center" style="max-width: 150px; margin: 0 auto;">
+                <button type="button" class="btn btn-outline-secondary" onclick="adjustBudgetItemQty('${it.id}', -1)">-</button>
+                <input type="number" id="budget-qty-${it.id}" class="form-control text-center fw-bold" value="${itemQty}" min="0" max="9999" style="max-width: 65px;" onchange="onBudgetItemQtyChange('${it.id}', this.value)">
+                <button type="button" class="btn btn-outline-secondary" onclick="adjustBudgetItemQty('${it.id}', 1)">+</button>
+              </div>
+            </td>
+            <td class="text-end align-middle" id="budget-subtotal-${it.id}">
+              ฿${subtotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+            </td>
+            <td class="text-center align-middle">
+              <button type="button" class="btn btn-xs btn-ios btn-ios-secondary py-1 px-2 text-nowrap" style="font-size:0.75rem;" onclick="fillBudgetItemToMax('${it.id}')" title="ตั้งจำนวนให้เต็ม Max (${maxVal} ชิ้น)">
+                <i class="fas fa-level-up-alt text-primary me-1"></i>เติม Max
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tableBody.innerHTML = rowsHtml;
+
+      const selectAllCb = document.getElementById('budget-select-all-cb');
+      if (selectAllCb) selectAllCb.checked = allChecked && items.length > 0;
+    }
+
+    // ================= BUDGET PRINT & CSV EXPORT =================
+    function printBudgetProcurementPlan() {
+      const selectedIds = Object.keys(budgetState.selectedItems || {}).filter(id => {
+        return budgetState.selectedItems[id]?.selected && (budgetState.selectedItems[id]?.qty > 0);
+      });
+
+      if (selectedIds.length === 0) {
+        Swal.fire('ยังไม่ได้เลือกรายการพัสดุ', 'กรุณาติ๊กเลือกรายการพัสดุและระบุจำนวนที่ต้องการจัดซื้อก่อนสั่งพิมพ์แผนจัดซื้อ', 'warning');
+        return;
+      }
+
+      const totalBudget = Number(budgetState.totalBudget) || 0;
+      let totalSpent = 0;
+      let totalUnits = 0;
+
+      const selectedItemsList = selectedIds.map(id => {
+        const item = (itemsData || []).find(i => String(i.id) === String(id)) || {};
+        const qty = Number(budgetState.selectedItems[id].qty) || 0;
+        const price = Number(item.unitPrice != null ? item.unitPrice : (item.price || 0)) || 0;
+        const subtotal = qty * price;
+        totalSpent += subtotal;
+        totalUnits += qty;
+        return {
+          ...item,
+          planQty: qty,
+          unitPrice: price,
+          subtotal: subtotal
+        };
+      });
+
+      const remaining = totalBudget - totalSpent;
+      const isOver = totalSpent > totalBudget;
+      const utilPercent = totalBudget > 0 ? ((totalSpent / totalBudget) * 100) : 0;
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const logoSrc = getAppLogoSrc();
+      const creatorName = currentUser ? currentUser.name : 'นางสาวรัญชนา ทองเวียง';
+      const creatorPos = currentUser ? (currentUser.position || 'ผู้ช่วยเจ้าหน้าที่ธุรการ') : 'ผู้ช่วยเจ้าหน้าที่ธุรการ';
+
+      let rowsHtml = '';
+      selectedItemsList.forEach((it, idx) => {
+        const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+        const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
+        const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+
+        rowsHtml += `
+          <tr>
+            <td class="text-center">${idx + 1}</td>
+            <td class="text-center fw-bold">${it.id || '-'}</td>
+            <td><strong>${it.name || '-'}</strong></td>
+            <td>${it.category || '-'}</td>
+            <td class="text-center">${rem.toLocaleString()}</td>
+            <td class="text-center">${minVal} / ${maxVal}</td>
+            <td class="text-end">฿${it.unitPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="text-center fw-bold" style="color:#0056b3; font-size:1.05rem;">+${it.planQty.toLocaleString()}</td>
+            <td class="text-center">${it.unit || 'ชิ้น'}</td>
+            <td class="text-end fw-bold" style="color:#0056b3;">฿${it.subtotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="text-center" style="font-size:0.8rem;">${rem <= minVal ? 'พัสดุใกล้หมด/หมด' : 'จัดหาสำรอง'}</td>
+          </tr>
+        `;
+      });
+
+      const printHtml = `
+        <div class="p-3" style="font-family:'Sarabun', 'Segoe UI', Tahoma, sans-serif; color:#111; background:#fff;">
+          <!-- HEADER -->
+          <div class="text-center mb-3">
+            <img src="${logoSrc}" style="height: 70px; object-fit: contain;" class="d-block mx-auto mb-2">
+            <h3 class="fw-bold mb-1" style="font-size:1.4rem;">แบบสรุปแผนประมาณการบริหารงบประมาณจัดซื้อพัสดุ / วัสดุ</h3>
+            <h5 class="mb-1 text-muted" style="font-size:1.05rem;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
+            <p class="small text-muted mb-1">
+              วันที่พิมพ์แผน: ${dateStr} เวลา ${timeStr} น. | ผู้จัดทำแผน: <strong>${creatorName}</strong> (${creatorPos})
+            </p>
+            <hr class="my-2" style="border-top: 1.5px solid #000;">
+          </div>
+
+          <!-- KPI SUMMARY BOXES -->
+          <div class="row g-2 mb-3">
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:#eaf3ff; border:1px solid #b3d1ff;">
+                <div class="small fw-semibold text-muted">วงเงินงบประมาณที่ตั้งไว้</div>
+                <div class="fw-bold" style="font-size:1.4rem; color:#007aff;">฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:#f0f9ff; border:1px solid #bae6fd;">
+                <div class="small fw-semibold text-muted">ยอดประมาณการจัดซื้อรวม</div>
+                <div class="fw-bold" style="font-size:1.4rem; color:#0284c7;">฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:${isOver ? '#fef2f2' : '#f0fdf4'}; border:1px solid ${isOver ? '#fca5a5' : '#86efac'};">
+                <div class="small fw-semibold text-muted">${isOver ? 'เกินวงเงินงบประมาณ' : 'งบประมาณคงเหลือสุทธิ'}</div>
+                <div class="fw-bold" style="font-size:1.4rem; color:${isOver ? '#dc2626' : '#16a34a'};">
+                  ฿${Math.abs(remaining).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+                </div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:#faf5ff; border:1px solid #e9d5ff;">
+                <div class="small fw-semibold text-muted">รายการ / จำนวนชิ้นรวม</div>
+                <div class="fw-bold" style="font-size:1.4rem; color:#9333ea;">${selectedItemsList.length} รายการ (${totalUnits.toLocaleString()} ชิ้น)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MAIN PROCUREMENT ITEMS TABLE -->
+          <table class="table table-bordered table-sm align-middle mb-4" style="font-size:0.83rem; border-color:#94a3b8;">
+            <thead style="background:#f1f5f9;">
+              <tr class="text-center">
+                <th style="width:40px;">ลำดับ</th>
+                <th style="width:85px;">รหัสพัสดุ</th>
+                <th>รายการพัสดุ / ชนิดวัสดุ</th>
+                <th style="width:140px;">หมวดหมู่</th>
+                <th style="width:75px;">คงเหลือ</th>
+                <th style="width:80px;">Min / Max</th>
+                <th style="width:90px;" class="text-end">ราคา/หน่วย</th>
+                <th style="width:90px;" class="text-center">จำนวนที่จัดซื้อ</th>
+                <th style="width:65px;" class="text-center">หน่วยนับ</th>
+                <th style="width:110px;" class="text-end">รวมเป็นเงิน (บาท)</th>
+                <th style="width:110px;">หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+              <tr style="background:#f8fafc; font-weight:bold;">
+                <td colspan="7" class="text-end py-2">รวมประมาณการจัดซื้อทั้งสิ้น (${selectedItemsList.length} รายการ):</td>
+                <td class="text-center py-2" style="color:#0056b3; font-size:1rem;">+${totalUnits.toLocaleString()}</td>
+                <td class="text-center py-2">ชิ้น</td>
+                <td class="text-end py-2" style="color:#0056b3; font-size:1.05rem;">฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td></td>
+              </tr>
+              <tr style="background:#f1f5f9; font-weight:bold;">
+                <td colspan="7" class="text-end py-2">วงเงินงบประมาณที่ได้รับจัดสรร:</td>
+                <td colspan="2" class="text-center py-2">สัดส่วนใช้ไป ${utilPercent.toFixed(1)}%</td>
+                <td class="text-end py-2" style="color:#007aff;">฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td></td>
+              </tr>
+              <tr style="background:${isOver ? '#fef2f2' : '#f0fdf4'}; font-weight:bold;">
+                <td colspan="7" class="text-end py-2">${isOver ? 'งบประมาณเกินวงเงิน:' : 'งบประมาณคงเหลือสุทธิ:'}</td>
+                <td colspan="2" class="text-center py-2">${isOver ? '⚠️ เกินงบ' : '✓ งบเพียงพอ'}</td>
+                <td class="text-end py-2" style="color:${isOver ? '#dc2626' : '#16a34a'}; font-size:1.1rem;">฿${remaining.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 3 OFFICIAL SIGNATURE BLOCKS -->
+          <div class="row pt-4 mt-2" style="page-break-inside: avoid;">
+            <div class="col-4 text-center">
+              <p class="mb-4">ลงชื่อ........................................................<br><span class="small fw-semibold text-muted">(ผู้จัดทำแผนประมาณการ)</span></p>
+              <p class="mb-0">(${creatorName})</p>
+              <p class="small text-muted">ตำแหน่ง ${creatorPos}</p>
+              <p class="small text-muted">วันที่ ...... / ...... / 2569</p>
+            </div>
+            <div class="col-4 text-center">
+              <p class="mb-4">ลงชื่อ........................................................<br><span class="small fw-semibold text-muted">(ผู้ตรวจสอบงบประมาณ)</span></p>
+              <p class="mb-0">(........................................................)</p>
+              <p class="small text-muted">ตำแหน่ง หัวหน้าฝ่าย / ผู้อำนวยการส่วน</p>
+              <p class="small text-muted">วันที่ ...... / ...... / 2569</p>
+            </div>
+            <div class="col-4 text-center">
+              <p class="mb-4">ลงชื่อ........................................................<br><span class="small fw-semibold text-muted">(ผู้อนุมัติ)</span></p>
+              <p class="mb-0">(........................................................)</p>
+              <p class="small text-muted">ตำแหน่ง ผู้อำนวยการสำนักช่าง</p>
+              <p class="small text-muted">วันที่ ...... / ...... / 2569</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const printArea = document.getElementById('print-area');
+      if (!printArea) { window.print(); return; }
+
+      setPrintPageOrientation('landscape');
+      printArea.innerHTML = printHtml;
+      document.body.classList.add('printing-report');
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          document.body.classList.remove('printing-report');
+          printArea.innerHTML = '';
+        }, 1500);
+      }, 50);
+    }
+
+    function exportBudgetPlanToCSV() {
+      const selectedIds = Object.keys(budgetState.selectedItems || {}).filter(id => {
+        return budgetState.selectedItems[id]?.selected && (budgetState.selectedItems[id]?.qty > 0);
+      });
+
+      if (selectedIds.length === 0) {
+        Swal.fire('ยังไม่ได้เลือกรายการพัสดุ', 'กรุณาเลือกรายการพัสดุและระบุจำนวนที่ต้องการจัดซื้อก่อนส่งออกไฟล์ CSV', 'warning');
+        return;
+      }
+
+      const totalBudget = Number(budgetState.totalBudget) || 0;
+      let totalSpent = 0;
+      let totalUnits = 0;
+
+      const now = new Date();
+      const dateFileStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const timeFileStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      const dateTh = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      let csv = '\uFEFF'; // UTF-8 BOM for MS Excel
+      csv += 'แผนประมาณการบริหารงบประมาณจัดซื้อพัสดุ / วัสดุ ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง\n';
+      csv += `พิมพ์วันที่:,"${dateTh} น.",ผู้จัดทำ:,"${currentUser ? currentUser.name : 'เจ้าหน้าที่'}"\n`;
+      csv += `วงเงินงบประมาณที่ตั้งไว้ (บาท):,${totalBudget}\n\n`;
+
+      csv += 'ลำดับ,รหัสพัสดุ,รายการพัสดุ,หมวดหมู่,สต๊อกคงเหลือปัจจุบัน,เกณฑ์ Min,เกณฑ์ Max,ราคาต่อหน่วย (บาท),จำนวนที่วางแผนจัดซื้อ,หน่วยนับ,รวมเป็นเงิน (บาท),สถานะสต๊อก\n';
+
+      selectedIds.forEach((id, idx) => {
+        const it = (itemsData || []).find(i => String(i.id) === String(id)) || {};
+        const qty = Number(budgetState.selectedItems[id].qty) || 0;
+        const price = Number(it.unitPrice != null ? it.unitPrice : (it.price || 0)) || 0;
+        const subtotal = qty * price;
+        const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+        const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
+        const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+        const unit = it.unit || 'ชิ้น';
+
+        totalSpent += subtotal;
+        totalUnits += qty;
+
+        const row = [
+          idx + 1,
+          `"${(it.id || id).replace(/"/g, '""')}"`,
+          `"${(it.name || '').replace(/"/g, '""')}"`,
+          `"${(it.category || '').replace(/"/g, '""')}"`,
+          rem,
+          minVal,
+          maxVal,
+          price,
+          qty,
+          `"${unit.replace(/"/g, '""')}"`,
+          subtotal,
+          `"${rem <= minVal ? 'ต่ำกว่าเกณฑ์ Min' : 'ปกติ'}"`
+        ];
+        csv += row.join(',') + '\n';
+      });
+
+      const remaining = totalBudget - totalSpent;
+      csv += `\n"รวมทั้งสิ้น (${selectedIds.length} รายการ)",,,,,,,,"${totalUnits}","ชิ้น","${totalSpent}",""\n`;
+      csv += `"วงเงินงบประมาณที่ตั้งไว้",,,,,,,,,,"${totalBudget}",""\n`;
+      csv += `"${remaining >= 0 ? 'งบประมาณคงเหลือ' : 'งบประมาณเกินวงเงิน'}",,,,,,,,,,"${remaining}",""\n`;
+
+      downloadCSVFile(csv, `แผนบริหารงบประมาณจัดซื้อพัสดุ_เทศบาลนครระยอง_${dateFileStr}_${timeFileStr}.csv`);
     }
   </script>
 </body>
