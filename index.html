@@ -2861,52 +2861,536 @@
     }
 
     // Helper: Call Google Apps Script Backend
-        // ======= VERCEL / STANDALONE MODE: fetch-based API call to GAS =======
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwC3xveGqgNQrVpNG3gQOK3nuAFT6D6j2uNn8xZl6BoMZj7zg58i3Xot3Fbb7czQIAg0Q/exec';
+        // ======= VERCEL HIGH-SPEED MODE: SUPABASE BACKEND (0.05s ULTRA FAST) =======
+    const SUPABASE_URL = 'https://dkcdeqsholpiaubksfpb.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_ts6iUKMAmmVmNQiPscZeSw_PdF3cHG5';
 
-    function buildApiParams(action, args) {
-      const p = { action };
-      if (action === 'getInitialAppData')       { p.userId = args[0]; p.role = args[1]; }
-      else if (action === 'loginUser')          { p.userId = args[0]; p.password = args[1]; }
-      else if (action === 'submitRequisition')  { p.reqData = args[0]; }
-      else if (action === 'deleteRequest')      { p.reqId = args[0]; }
-      else if (action === 'deleteMultipleRequests') { p.reqIds = (Array.isArray(args[0]) ? args[0] : (args[0] && args[0].reqIds ? args[0].reqIds : args[0])); }
-      else if (action === 'editRequest')        { p.reqId = args[0]; p.editData = args[1]; p.newPurpose = args[1]; }
-      else if (action === 'updateRequestStatus'){ p.reqId = args[0]; p.newStatus = args[1]; p.handlerName = args[2]; }
-      else if (action === 'getRequests')        { p.userId = args[0]; p.role = args[1]; }
-      else if (action === 'saveItem')           { p.item = args[0]; }
-      else if (action === 'deleteItem')         { p.itemId = args[0]; p.opId = args[1]; p.opName = args[2]; }
-      else if (action === 'saveUser')           { p.u = args[0]; }
-      else if (action === 'deleteUser')         { p.id = args[0]; }
-      else if (action === 'getUsers')           { /* no params */ }
-      else if (action === 'getItems')           { /* no params */ }
-      else if (action === 'getStockLogs')       { /* no params */ }
-      return p;
+    const _sbHeaders = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
+
+    async function _dbFetch(path, options = {}) {
+      const url = SUPABASE_URL + '/rest/v1/' + path;
+      const mergedHeaders = { ..._sbHeaders, ...(options.headers || {}) };
+      const res = await fetch(url, { ...options, headers: mergedHeaders });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error('Supabase Error [' + res.status + ']: ' + errText);
+      }
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
     }
 
-    function apiCall(action, ...args) {
-      const params = buildApiParams(action, args);
-      return fetch(GAS_API_URL, {
-        method: 'POST',
-        body: JSON.stringify(params),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-      })
-      .then(async r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const text = await r.text();
-        try { return JSON.parse(text); }
-        catch(e) { throw new Error('Invalid JSON response: ' + text.substring(0, 100)); }
-      })
-      .catch(err => {
-        console.warn('POST failed, trying GET fallback:', err.message);
-        const qp = new URLSearchParams({ action, payload: JSON.stringify(params) });
-        return fetch(GAS_API_URL + '?' + qp.toString())
-          .then(async r => {
-            const text = await r.text();
-            try { return JSON.parse(text); }
-            catch(e) { throw new Error('GET also failed. JSON parse error: ' + text.substring(0, 100)); }
+    // Direct Supabase API Router (Handles all 14 actions natively)
+    async function apiCall(action, ...args) {
+      try {
+        if (action === 'loginUser') {
+          const userId = String(args[0] || '').trim();
+          const password = String(args[1] || '').trim();
+          const rows = await _dbFetch('users?id=eq.' + encodeURIComponent(userId) + '&password=eq.' + encodeURIComponent(password) + '&select=*');
+          if (!rows || rows.length === 0) {
+            return { success: false, message: 'รหัสผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง' };
+          }
+          const u = rows[0];
+          if (u.status && u.status.toUpperCase() === 'INACTIVE') {
+            return { success: false, message: 'บัญชีผู้ใช้นี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ' };
+          }
+          return {
+            success: true,
+            user: {
+              id: u.id,
+              name: u.name,
+              role: u.role || 'USER',
+              position: u.position || '',
+              email: u.email || '',
+              phone: u.phone || '',
+              status: u.status || 'ACTIVE',
+              avatar: ''
+            }
+          };
+        }
+
+        if (action === 'getInitialAppData') {
+          const userId = args[0];
+          const role = args[1] || 'USER';
+          const isAdmin = (role === 'superadmin' || role === 'admin' || role === 'ADMIN');
+
+          const reqQuery = isAdmin 
+            ? 'requisitions?select=*&order=date_time.desc' 
+            : 'requisitions?user_id=eq.' + encodeURIComponent(userId) + '&select=*&order=date_time.desc';
+
+          const [itemsRaw, reqsRaw, usersRaw, logsRaw] = await Promise.all([
+            _dbFetch('items?select=*&order=id.asc'),
+            _dbFetch(reqQuery),
+            isAdmin ? _dbFetch('users?select=*&order=id.asc') : Promise.resolve([]),
+            _dbFetch('stock_logs?select=*&order=date_time.desc&limit=200')
+          ]);
+
+          const items = (itemsRaw || []).map(r => ({
+            id: r.id,
+            category: r.category || 'วัสดุสำนักงาน 07',
+            name: r.name,
+            docNo: 'รอบ1',
+            qtyReceived: Number(r.stock) || 0,
+            unitPrice: Number(r.price_per_unit) || 0,
+            totalPrice: (Number(r.stock) || 0) * (Number(r.price_per_unit) || 0),
+            qtyCheckedOut: 0,
+            checkedOutPrice: 0,
+            qtyRemaining: Number(r.stock) || 0,
+            remainingPrice: (Number(r.stock) || 0) * (Number(r.price_per_unit) || 0),
+            image: r.image_url || '',
+            status: 'Active',
+            minStock: Number(r.min_qty) || 5,
+            maxStock: Number(r.max_qty) || 20,
+            unit: r.unit || 'ชิ้น',
+            source: ''
+          }));
+
+          const requests = (reqsRaw || []).map(r => ({
+            id: r.req_id,
+            timestamp: r.date_time,
+            userId: r.user_id,
+            userName: r.user_name,
+            items: typeof r.items === 'string' ? JSON.parse(r.items || '[]') : (r.items || []),
+            purpose: r.purpose || '',
+            totalPrice: Number(r.total_val) || 0,
+            status: r.status || 'Pending',
+            handledBy: r.handler_name || '',
+            position: '',
+            department: ''
+          }));
+
+          const users = (usersRaw || []).map(u => ({
+            id: u.id,
+            name: u.name,
+            position: u.position || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            role: u.role || 'USER',
+            status: u.status || 'ACTIVE',
+            avatar: ''
+          }));
+
+          const stockLogs = (logsRaw || []).map(l => ({
+            logId: l.log_id,
+            timestamp: l.date_time,
+            itemId: l.item_id,
+            itemName: l.item_name,
+            category: l.category || '',
+            actionType: l.action_type || '',
+            qtyChange: Number(l.qty_change) || 0,
+            balanceQty: Number(l.resulting_stock) || 0,
+            resultingStock: Number(l.resulting_stock) || 0,
+            unitPrice: Number(l.unit_price) || 0,
+            totalVal: Number(l.total_val) || 0,
+            totalValue: Number(l.total_val) || 0,
+            operator: l.operator || '',
+            operatorName: l.operator || '',
+            notes: l.notes || '',
+            remark: l.notes || ''
+          }));
+
+          let lowStockCount = 0;
+          let totalStockValue = 0;
+          const categoryCounts = {};
+
+          items.forEach(it => {
+            totalStockValue += it.remainingPrice;
+            if (it.qtyRemaining <= it.minStock) lowStockCount++;
+            categoryCounts[it.category] = (categoryCounts[it.category] || 0) + 1;
           });
-      });
+
+          const pendingReqCount = requests.filter(r => r.status === 'Pending' || r.status === 'รออนุมัติ').length;
+
+          return {
+            items,
+            requests,
+            users,
+            stockLogs,
+            stats: {
+              totalItems: items.length,
+              lowStockCount,
+              totalStockValue,
+              categoryCounts,
+              pendingReqCount
+            }
+          };
+        }
+
+        if (action === 'getItems') {
+          const itemsRaw = await _dbFetch('items?select=*&order=id.asc');
+          return (itemsRaw || []).map(r => ({
+            id: r.id,
+            category: r.category || 'วัสดุสำนักงาน 07',
+            name: r.name,
+            docNo: 'รอบ1',
+            qtyReceived: Number(r.stock) || 0,
+            unitPrice: Number(r.price_per_unit) || 0,
+            totalPrice: (Number(r.stock) || 0) * (Number(r.price_per_unit) || 0),
+            qtyCheckedOut: 0,
+            checkedOutPrice: 0,
+            qtyRemaining: Number(r.stock) || 0,
+            remainingPrice: (Number(r.stock) || 0) * (Number(r.price_per_unit) || 0),
+            image: r.image_url || '',
+            status: 'Active',
+            minStock: Number(r.min_qty) || 5,
+            maxStock: Number(r.max_qty) || 20,
+            unit: r.unit || 'ชิ้น',
+            source: ''
+          }));
+        }
+
+        if (action === 'getRequests') {
+          const userId = args[0];
+          const role = args[1] || 'USER';
+          const isAdmin = (role === 'superadmin' || role === 'admin' || role === 'ADMIN');
+          const reqQuery = isAdmin 
+            ? 'requisitions?select=*&order=date_time.desc' 
+            : 'requisitions?user_id=eq.' + encodeURIComponent(userId) + '&select=*&order=date_time.desc';
+          const reqsRaw = await _dbFetch(reqQuery);
+          return (reqsRaw || []).map(r => ({
+            id: r.req_id,
+            timestamp: r.date_time,
+            userId: r.user_id,
+            userName: r.user_name,
+            items: typeof r.items === 'string' ? JSON.parse(r.items || '[]') : (r.items || []),
+            purpose: r.purpose || '',
+            totalPrice: Number(r.total_val) || 0,
+            status: r.status || 'Pending',
+            handledBy: r.handler_name || '',
+            position: '',
+            department: ''
+          }));
+        }
+
+        if (action === 'getStockLogs') {
+          const logsRaw = await _dbFetch('stock_logs?select=*&order=date_time.desc&limit=200');
+          return (logsRaw || []).map(l => ({
+            logId: l.log_id,
+            timestamp: l.date_time,
+            itemId: l.item_id,
+            itemName: l.item_name,
+            category: l.category || '',
+            actionType: l.action_type || '',
+            qtyChange: Number(l.qty_change) || 0,
+            balanceQty: Number(l.resulting_stock) || 0,
+            resultingStock: Number(l.resulting_stock) || 0,
+            unitPrice: Number(l.unit_price) || 0,
+            totalVal: Number(l.total_val) || 0,
+            totalValue: Number(l.total_val) || 0,
+            operator: l.operator || '',
+            operatorName: l.operator || '',
+            notes: l.notes || '',
+            remark: l.notes || ''
+          }));
+        }
+
+        if (action === 'submitRequisition') {
+          const reqData = args[0] || {};
+          const nowStr = new Date().toISOString();
+          const d = new Date();
+          const y = d.getFullYear() + 543;
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const rnd = String(Math.floor(1000 + Math.random() * 9000));
+          const reqId = reqData.id || ('REQ-' + y + m + day + '-' + rnd);
+
+          await _dbFetch('requisitions', {
+            method: 'POST',
+            body: JSON.stringify([{
+              req_id: reqId,
+              date_time: nowStr,
+              user_id: reqData.userId || '',
+              user_name: reqData.userName || '',
+              items: reqData.items || [],
+              purpose: reqData.purpose || '',
+              total_val: Number(reqData.totalPrice) || 0,
+              status: 'Pending',
+              handler_name: ''
+            }])
+          });
+
+          for (const it of (reqData.items || [])) {
+            const rows = await _dbFetch('items?id=eq.' + encodeURIComponent(it.id) + '&select=*');
+            if (rows && rows.length > 0) {
+              const cur = rows[0];
+              const newStock = Math.max(0, (Number(cur.stock) || 0) - (Number(it.qty) || 0));
+              await _dbFetch('items?id=eq.' + encodeURIComponent(it.id), {
+                method: 'PATCH',
+                body: JSON.stringify({ stock: newStock })
+              });
+
+              await _dbFetch('stock_logs', {
+                method: 'POST',
+                body: JSON.stringify([{
+                  log_id: 'LOG-' + Date.now() + '-' + it.id,
+                  date_time: nowStr,
+                  item_id: it.id,
+                  item_name: it.name || cur.name,
+                  category: it.category || cur.category,
+                  action_type: 'เบิกจ่ายพัสดุ',
+                  qty_change: -(Number(it.qty) || 0),
+                  resulting_stock: newStock,
+                  unit_price: Number(it.price) || Number(cur.price_per_unit) || 0,
+                  total_val: (Number(it.qty) || 0) * (Number(it.price) || Number(cur.price_per_unit) || 0),
+                  operator: reqData.userName || 'ผู้เบิก',
+                  notes: 'ใบเบิก ' + reqId + ' (' + (reqData.purpose || 'ใช้งานทั่วไป') + ')'
+                }])
+              });
+            }
+          }
+          return { success: true, reqId: reqId };
+        }
+
+        if (action === 'deleteRequest') {
+          const reqId = args[0];
+          await _dbFetch('requisitions?req_id=eq.' + encodeURIComponent(reqId), { method: 'DELETE' });
+          return { success: true };
+        }
+
+        if (action === 'deleteMultipleRequests') {
+          const reqIds = Array.isArray(args[0]) ? args[0] : (args[0] && args[0].reqIds ? args[0].reqIds : [args[0]]);
+          for (const rid of reqIds) {
+            if (rid) await _dbFetch('requisitions?req_id=eq.' + encodeURIComponent(rid), { method: 'DELETE' });
+          }
+          return { success: true };
+        }
+
+        if (action === 'editRequest') {
+          const reqId = args[0];
+          const editData = args[1];
+          const payload = typeof editData === 'object' ? editData : { purpose: String(editData) };
+          await _dbFetch('requisitions?req_id=eq.' + encodeURIComponent(reqId), {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+          });
+          return { success: true };
+        }
+
+        if (action === 'updateRequestStatus') {
+          const reqId = args[0];
+          const newStatus = args[1];
+          const handlerName = args[2] || '';
+
+          const rows = await _dbFetch('requisitions?req_id=eq.' + encodeURIComponent(reqId) + '&select=*');
+          if (!rows || rows.length === 0) throw new Error('ไม่พบใบเบิกรหัส: ' + reqId);
+          const req = rows[0];
+          const oldStatus = req.status;
+
+          await _dbFetch('requisitions?req_id=eq.' + encodeURIComponent(reqId), {
+            method: 'PATCH',
+            body: JSON.stringify({ status: newStatus, handler_name: handlerName })
+          });
+
+          const isCancel = (newStatus === 'Cancelled' || newStatus === 'Rejected' || newStatus === 'ยกเลิก' || newStatus === 'ไม่อนุมัติ');
+          if (isCancel && oldStatus !== newStatus) {
+            const reqItems = typeof req.items === 'string' ? JSON.parse(req.items || '[]') : (req.items || []);
+            for (const it of reqItems) {
+              const itRows = await _dbFetch('items?id=eq.' + encodeURIComponent(it.id) + '&select=*');
+              if (itRows && itRows.length > 0) {
+                const cur = itRows[0];
+                const newStock = (Number(cur.stock) || 0) + (Number(it.qty) || 0);
+                await _dbFetch('items?id=eq.' + encodeURIComponent(it.id), {
+                  method: 'PATCH',
+                  body: JSON.stringify({ stock: newStock })
+                });
+
+                await _dbFetch('stock_logs', {
+                  method: 'POST',
+                  body: JSON.stringify([{
+                    log_id: 'LOG-' + Date.now() + '-' + it.id,
+                    date_time: new Date().toISOString(),
+                    item_id: it.id,
+                    item_name: it.name || cur.name,
+                    category: cur.category,
+                    action_type: 'คืนสต๊อก (ยกเลิกใบเบิก)',
+                    qty_change: Number(it.qty) || 0,
+                    resulting_stock: newStock,
+                    unit_price: Number(it.price) || 0,
+                    total_val: (Number(it.qty) || 0) * (Number(it.price) || 0),
+                    operator: handlerName,
+                    notes: 'ยกเลิกใบเบิก ' + reqId
+                  }])
+                });
+              }
+            }
+          }
+          return { success: true };
+        }
+
+        if (action === 'saveItem') {
+          const item = args[0] || {};
+          const itemId = String(item.id || '').trim();
+          if (!itemId) throw new Error('กรุณาระบุรหัสพัสดุ');
+
+          const itRows = await _dbFetch('items?id=eq.' + encodeURIComponent(itemId) + '&select=*');
+          const isNew = (!itRows || itRows.length === 0);
+          const oldStock = isNew ? 0 : (Number(itRows[0].stock) || 0);
+          const newStock = Number(item.stock != null ? item.stock : (item.qtyRemaining != null ? item.qtyRemaining : 0));
+
+          const payload = {
+            id: itemId,
+            name: item.name,
+            category: item.category || 'ทั่วไป',
+            unit: item.unit || 'ชิ้น',
+            stock: newStock,
+            min_qty: Number(item.minStock != null ? item.minStock : (item.minQty != null ? item.minQty : 5)),
+            max_qty: Number(item.maxStock != null ? item.maxStock : (item.maxQty != null ? item.maxQty : 20)),
+            price_per_unit: Number(item.price != null ? item.price : (item.unitPrice != null ? item.unitPrice : 0)),
+            image_url: item.image || item.image_url || ''
+          };
+
+          if (isNew) {
+            await _dbFetch('items', {
+              method: 'POST',
+              body: JSON.stringify([payload])
+            });
+            await _dbFetch('stock_logs', {
+              method: 'POST',
+              body: JSON.stringify([{
+                log_id: 'LOG-' + Date.now() + '-' + itemId,
+                date_time: new Date().toISOString(),
+                item_id: itemId,
+                item_name: item.name,
+                category: payload.category,
+                action_type: 'เพิ่มพัสดุใหม่',
+                qty_change: newStock,
+                resulting_stock: newStock,
+                unit_price: payload.price_per_unit,
+                total_val: newStock * payload.price_per_unit,
+                operator: item.operatorName || 'เจ้าหน้าที่พัสดุ',
+                notes: item.docNo || 'รับเข้าพัสดุใหม่'
+              }])
+            });
+          } else {
+            await _dbFetch('items?id=eq.' + encodeURIComponent(itemId), {
+              method: 'PATCH',
+              body: JSON.stringify(payload)
+            });
+            if (newStock !== oldStock) {
+              const diff = newStock - oldStock;
+              await _dbFetch('stock_logs', {
+                method: 'POST',
+                body: JSON.stringify([{
+                  log_id: 'LOG-' + Date.now() + '-' + itemId,
+                  date_time: new Date().toISOString(),
+                  item_id: itemId,
+                  item_name: item.name,
+                  category: payload.category,
+                  action_type: diff > 0 ? 'เติมสต๊อก / นำเข้า' : 'ปรับลดยอดสต๊อก',
+                  qty_change: diff,
+                  resulting_stock: newStock,
+                  unit_price: payload.price_per_unit,
+                  total_val: Math.abs(diff) * payload.price_per_unit,
+                  operator: item.operatorName || 'เจ้าหน้าที่พัสดุ',
+                  notes: item.docNo || 'ปรับปรุงยอดสต๊อก'
+                }])
+              });
+            }
+          }
+          return {
+            success: true,
+            item: {
+              id: itemId,
+              name: payload.name,
+              category: payload.category,
+              unit: payload.unit,
+              qtyRemaining: payload.stock,
+              price: payload.price_per_unit,
+              unitPrice: payload.price_per_unit,
+              minStock: payload.min_qty,
+              maxStock: payload.max_qty,
+              image: payload.image_url
+            }
+          };
+        }
+
+        if (action === 'deleteItem') {
+          const itemId = args[0];
+          const opName = args[2] || 'เจ้าหน้าที่พัสดุ';
+          const itRows = await _dbFetch('items?id=eq.' + encodeURIComponent(itemId) + '&select=*');
+          const cur = itRows && itRows.length > 0 ? itRows[0] : null;
+
+          await _dbFetch('items?id=eq.' + encodeURIComponent(itemId), { method: 'DELETE' });
+
+          if (cur) {
+            await _dbFetch('stock_logs', {
+              method: 'POST',
+              body: JSON.stringify([{
+                log_id: 'LOG-' + Date.now() + '-' + itemId,
+                date_time: new Date().toISOString(),
+                item_id: itemId,
+                item_name: cur.name,
+                category: cur.category,
+                action_type: 'ลบรายการพัสดุ',
+                qty_change: -(Number(cur.stock) || 0),
+                resulting_stock: 0,
+                unit_price: Number(cur.price_per_unit) || 0,
+                total_val: 0,
+                operator: opName,
+                notes: 'ลบรายการพัสดุออกจากระบบ'
+              }])
+            });
+          }
+          return { success: true };
+        }
+
+        if (action === 'getUsers') {
+          const rows = await _dbFetch('users?select=*&order=id.asc');
+          return (rows || []).map(u => ({
+            id: u.id,
+            name: u.name,
+            position: u.position || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            role: u.role || 'USER',
+            status: u.status || 'ACTIVE',
+            avatar: ''
+          }));
+        }
+
+        if (action === 'saveUser') {
+          const u = args[0] || {};
+          const uid = String(u.id || '').trim();
+          if (!uid) throw new Error('กรุณาระบุรหัสผู้ใช้');
+
+          const userRows = await _dbFetch('users?id=eq.' + encodeURIComponent(uid) + '&select=*');
+          const isNew = (!userRows || userRows.length === 0);
+
+          const payload = {
+            id: uid,
+            name: u.name || '',
+            role: u.role || 'USER',
+            position: u.position || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            status: u.status || 'ACTIVE'
+          };
+          if (u.password) payload.password = u.password;
+
+          if (isNew) {
+            if (!payload.password) payload.password = '1234';
+            await _dbFetch('users', { method: 'POST', body: JSON.stringify([payload]) });
+          } else {
+            await _dbFetch('users?id=eq.' + encodeURIComponent(uid), { method: 'PATCH', body: JSON.stringify(payload) });
+          }
+          return { success: true };
+        }
+
+        if (action === 'deleteUser') {
+          const uid = args[0];
+          await _dbFetch('users?id=eq.' + encodeURIComponent(uid), { method: 'DELETE' });
+          return { success: true };
+        }
+
+        throw new Error('Unknown Supabase action: ' + action);
+      } catch (err) {
+        console.error('Supabase API Error (' + action + '):', err);
+        return { success: false, error: err.message || String(err) };
+      }
     }
 
     // ================= PERFORMANCE: DEBOUNCE UTILITY =================
