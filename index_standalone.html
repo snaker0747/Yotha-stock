@@ -2272,10 +2272,17 @@
                   <h4 class="fw-bold mb-0 text-dark-emphasis page-main-title text-nowrap" style="font-size: clamp(1.15rem, 2vw, 1.35rem);"><i class="fas fa-coins text-primary me-2"></i>การบริหารงบประมาณ (ระบบวางแผนจัดซื้อพัสดุ)</h4>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap ms-auto">
-                  <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="exportBudgetPlanToCSV()">
+                  <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1.5 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="openBudgetHistoryModal()" title="ดูประวัติการพิมพ์และแผนที่บันทึกไว้">
+                    <i class="fas fa-history text-primary"></i><span>ประวัติการพิมพ์ / แผนที่บันทึก</span>
+                    <span class="badge bg-primary rounded-pill text-white ms-1" id="budget-history-badge" style="font-size: 0.72rem; padding: 0.25em 0.6em;">0</span>
+                  </button>
+                  <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="saveCurrentBudgetPlanModal()" title="บันทึกฉบับร่างแผนจัดซื้อปัจจุบัน">
+                    <i class="fas fa-save text-primary me-1"></i>บันทึกแผน
+                  </button>
+                  <button class="btn btn-ios btn-ios-secondary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="exportBudgetPlanToCSV()" title="ส่งออกข้อมูลเป็นไฟล์ CSV / Excel">
                     <i class="fas fa-file-excel me-1 text-success"></i>ส่งออก CSV
                   </button>
-                  <button class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="printBudgetProcurementPlan()">
+                  <button class="btn btn-ios btn-ios-primary btn-sm d-flex align-items-center justify-content-center gap-1 text-nowrap px-3" style="min-height: 40px; height: 40px;" onclick="printBudgetProcurementPlan()" title="พิมพ์แบบสรุปแผนจัดซื้อ A4 และบันทึกลงประวัติอัตโนมัติ">
                     <i class="fas fa-print me-1"></i>พิมพ์แผนจัดซื้อ (A4)
                   </button>
                 </div>
@@ -2460,6 +2467,9 @@
 
                 <!-- Right Action Buttons (Stay in same row) -->
                 <div class="budget-dock-actions">
+                  <button type="button" class="btn btn-ios btn-ios-secondary btn-sm d-inline-flex align-items-center gap-1 text-nowrap px-2.5 py-1.5" style="font-size:0.8rem;" onclick="openBudgetHistoryModal()" title="ประวัติการพิมพ์ / แผนที่บันทึก">
+                    <i class="fas fa-history text-primary"></i><span class="d-none d-sm-inline">ประวัติ (<span id="budget-history-badge-dock">0</span>)</span>
+                  </button>
                   <button type="button" class="btn btn-ios btn-ios-secondary btn-sm d-inline-flex align-items-center gap-1 text-nowrap px-2.5 py-1.5" style="font-size:0.8rem;" onclick="exportBudgetPlanToCSV()" title="ส่งออก Excel / CSV">
                     <i class="fas fa-file-excel text-success"></i><span class="d-none d-sm-inline">ส่งออก CSV</span>
                   </button>
@@ -2938,6 +2948,70 @@
       </div>
     </div>
   </div>
+
+  <!-- BUDGET PROCUREMENT PLAN HISTORY MODAL -->
+  <div class="modal fade" id="modal-budget-history" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content glass-card border-0 p-0 overflow-hidden shadow-lg">
+        <!-- Modal Header -->
+        <div class="modal-header border-0 p-3.5 pb-2" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(242, 242, 247, 0.9) 100%);">
+          <div class="w-100">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-3 bg-primary text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                  <i class="fas fa-history fs-5"></i>
+                </div>
+                <div>
+                  <h5 class="fw-bold mb-0 text-dark-emphasis">ประวัติการพิมพ์ & แผนจัดซื้อที่บันทึกไว้</h5>
+                  <div class="small text-muted-ios" style="font-size: 0.8rem;">
+                    สามารถเรียกคืนแผนเดิมมาแก้ไขบนหน้าจอ หรือสั่งพิมพ์ซ้ำได้ทันที
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-ios btn-ios-secondary" onclick="saveCurrentBudgetPlanModal()">
+                  <i class="fas fa-plus text-primary me-1"></i>บันทึกแผนปัจจุบัน
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+            </div>
+
+            <!-- Search & Quick Filters -->
+            <div class="row g-2 mt-1">
+              <div class="col-12 col-md-8">
+                <div class="position-relative">
+                  <i class="fas fa-search position-absolute text-muted-ios" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+                  <input type="text" id="budget-history-search" class="form-control form-control-ios ps-5 py-1.5" style="font-size: 0.85rem;" placeholder="ค้นหาตามชื่อแผน, วันที่, หรือผู้จัดทำ..." oninput="renderBudgetHistoryList(this.value)">
+                </div>
+              </div>
+              <div class="col-12 col-md-4 text-md-end d-flex align-items-center justify-content-between justify-content-md-end gap-2">
+                <span class="small text-muted-ios" id="budget-history-summary-count">พบ 0 แผน</span>
+                <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2" style="font-size: 0.75rem;" onclick="clearAllBudgetHistory()">
+                  <i class="fas fa-trash-alt me-1"></i>ล้างประวัติทั้งหมด
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body p-3 p-md-4" style="background: rgba(248, 249, 250, 0.7); min-height: 380px;">
+          <div id="budget-history-list-container">
+            <!-- Dynamically populated cards -->
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer border-0 p-3 bg-white d-flex justify-content-between align-items-center">
+          <span class="small text-muted-ios"><i class="fas fa-info-circle me-1 text-primary"></i>กด <strong>"โหลดมาแก้ไข"</strong> เพื่อดึงรายการทั้งหมดกลับคืนสู่หน้าจอวางแผนงบประมาณ</span>
+          <button type="button" class="btn btn-ios btn-ios-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i>ปิดหน้าต่าง
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- JS APPLICATION LOGIC -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -9353,6 +9427,9 @@
         return;
       }
 
+      // Auto-save current snapshot to history
+      saveCurrentBudgetPlan('', true);
+
       const totalBudget = Number(budgetState.totalBudget) || 0;
       let totalSpent = 0;
       let totalUnits = 0;
@@ -9568,6 +9645,670 @@
 
       downloadCSVFile(csv, `แผนบริหารงบประมาณจัดซื้อพัสดุ_เทศบาลนครระยอง_${dateFileStr}_${timeFileStr}.csv`);
     }
+
+    // ================= BUDGET PROCUREMENT PLAN HISTORY ENGINE =================
+    const BUDGET_HISTORY_KEY = 'rayong_budget_plans_history';
+
+    function getBudgetHistory() {
+      try {
+        const saved = localStorage.getItem(BUDGET_HISTORY_KEY);
+        if (!saved) return [];
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.warn("Could not load budget history:", e);
+        return [];
+      }
+    }
+
+    function saveBudgetHistory(list) {
+      try {
+        localStorage.setItem(BUDGET_HISTORY_KEY, JSON.stringify(list || []));
+        updateBudgetHistoryBadge();
+      } catch (e) {
+        console.warn("Could not save budget history:", e);
+      }
+    }
+
+    function updateBudgetHistoryBadge() {
+      const history = getBudgetHistory();
+      const count = history.length;
+      const badge = document.getElementById('budget-history-badge');
+      if (badge) badge.innerText = count;
+      const dockBadge = document.getElementById('budget-history-badge-dock');
+      if (dockBadge) dockBadge.innerText = count;
+    }
+
+    function saveCurrentBudgetPlan(customName = '', autoFromPrint = false) {
+      const selectedIds = Object.keys(budgetState.selectedItems || {}).filter(id => {
+        return budgetState.selectedItems[id]?.selected && (budgetState.selectedItems[id]?.qty > 0);
+      });
+
+      if (selectedIds.length === 0) {
+        if (!autoFromPrint) {
+          Swal.fire('ยังไม่มีรายการที่เลือก', 'กรุณาติ๊กเลือกรายการพัสดุและระบุจำนวนที่ต้องการจัดซื้อก่อนทำการบันทึกแผน', 'warning');
+        }
+        return null;
+      }
+
+      const totalBudget = Number(budgetState.totalBudget) || 0;
+      let totalSpent = 0;
+      let totalUnits = 0;
+
+      const itemsSnapshot = selectedIds.map(id => {
+        const it = (itemsData || []).find(i => String(i.id) === String(id)) || {};
+        const qty = Number(budgetState.selectedItems[id].qty) || 0;
+        const price = Number(it.unitPrice != null ? it.unitPrice : (it.price || 0)) || 0;
+        const subtotal = qty * price;
+        totalSpent += subtotal;
+        totalUnits += qty;
+        return {
+          id: String(id),
+          name: it.name || '-',
+          category: it.category || '-',
+          unit: it.unit || 'ชิ้น',
+          unitPrice: price,
+          planQty: qty,
+          subtotal: subtotal,
+          qtyRemaining: Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0,
+          minStock: (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5,
+          maxStock: (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20,
+          image: it.image || ''
+        };
+      });
+
+      const now = new Date();
+      const planId = 'PLAN-' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '-' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + String(now.getSeconds()).padStart(2, '0');
+      
+      const defaultName = `แผนจัดซื้อพัสดุ (${itemsSnapshot.length} รายการ - ฿${totalSpent.toLocaleString()})`;
+      const finalName = customName.trim() || defaultName;
+
+      const newPlan = {
+        id: planId,
+        name: finalName,
+        createdAt: now.toISOString(),
+        dateStr: now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }),
+        timeStr: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+        creatorName: currentUser ? currentUser.name : 'ผู้ดูแลระบบ',
+        creatorPosition: currentUser ? (currentUser.position || 'เจ้าหน้าที่ธุรการ') : '',
+        totalBudget: totalBudget,
+        totalSpent: totalSpent,
+        remaining: totalBudget - totalSpent,
+        isOver: totalSpent > totalBudget,
+        itemsCount: itemsSnapshot.length,
+        totalUnits: totalUnits,
+        selectedItems: JSON.parse(JSON.stringify(budgetState.selectedItems)),
+        itemsSnapshot: itemsSnapshot,
+        source: autoFromPrint ? 'พิมพ์แผนจัดซื้อ' : 'บันทึกแผน'
+      };
+
+      const history = getBudgetHistory();
+      history.unshift(newPlan);
+      if (history.length > 50) history.pop();
+      saveBudgetHistory(history);
+
+      return newPlan;
+    }
+
+    async function saveCurrentBudgetPlanModal() {
+      const selectedIds = Object.keys(budgetState.selectedItems || {}).filter(id => {
+        return budgetState.selectedItems[id]?.selected && (budgetState.selectedItems[id]?.qty > 0);
+      });
+
+      if (selectedIds.length === 0) {
+        Swal.fire('ยังไม่มีรายการที่เลือก', 'กรุณาติ๊กเลือกรายการพัสดุและระบุจำนวนที่ต้องการจัดซื้อก่อนทำการบันทึกแผน', 'warning');
+        return;
+      }
+
+      const { value: planName } = await Swal.fire({
+        title: 'บันทึกแผนจัดซื้อพัสดุ',
+        input: 'text',
+        inputLabel: 'ระบุชื่อแผนหรือหมายเหตุ (ไม่บังคับ):',
+        inputValue: `แผนจัดซื้อประจำวันที่ ${new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-save me-1"></i>บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { confirmButton: 'btn btn-ios btn-ios-primary', cancelButton: 'btn btn-ios btn-ios-secondary' },
+        buttonsStyling: false
+      });
+
+      if (planName === undefined) return; // user cancelled
+
+      const plan = saveCurrentBudgetPlan(planName, false);
+      if (plan) {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: `บันทึกแผน "${plan.name}" เรียบร้อยแล้ว`,
+          showConfirmButton: false,
+          timer: 2000
+        });
+        updateBudgetHistoryBadge();
+      }
+    }
+
+    function openBudgetHistoryModal() {
+      renderBudgetHistoryList('');
+      const modalEl = document.getElementById('modal-budget-history');
+      if (modalEl) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      }
+    }
+
+    function renderBudgetHistoryList(query = '') {
+      const container = document.getElementById('budget-history-list-container');
+      const countEl = document.getElementById('budget-history-summary-count');
+      if (!container) return;
+
+      let history = getBudgetHistory();
+      const q = (query || '').trim().toLowerCase();
+
+      if (q) {
+        history = history.filter(p => 
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.id && p.id.toLowerCase().includes(q)) ||
+          (p.creatorName && p.creatorName.toLowerCase().includes(q)) ||
+          (p.dateStr && p.dateStr.toLowerCase().includes(q))
+        );
+      }
+
+      if (countEl) countEl.innerText = `พบ ${history.length} แผน`;
+
+      if (history.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-5">
+            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+              <i class="fas fa-history fa-2x text-muted opacity-50"></i>
+            </div>
+            <h6 class="fw-bold text-dark-emphasis mb-1">ยังไม่มีประวัติแผนจัดซื้อ</h6>
+            <p class="small text-muted mb-3">เมื่อท่านทำการสั่งพิมพ์แผนจัดซื้อ หรือกดปุ่ม "บันทึกแผน" แผนจะปรากฏที่นี่โดยอัตโนมัติ</p>
+            <button class="btn btn-sm btn-ios btn-ios-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('modal-budget-history'))?.hide()">
+              <i class="fas fa-coins me-1"></i>ไปเริ่มสร้างแผนจัดซื้อ
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      history.forEach((plan, idx) => {
+        const isOver = plan.isOver || (plan.totalSpent > plan.totalBudget);
+        const remainVal = Math.abs(plan.remaining != null ? plan.remaining : (plan.totalBudget - plan.totalSpent));
+        const statusBadge = isOver 
+          ? `<span class="badge badge-ios badge-ios-danger px-2.5 py-1" style="font-size:0.75rem;"><i class="fas fa-exclamation-triangle me-1"></i>เกินงบ ฿${remainVal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>`
+          : `<span class="badge badge-ios badge-ios-success px-2.5 py-1" style="font-size:0.75rem;"><i class="fas fa-check-circle me-1"></i>คงเหลือ ฿${remainVal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
+
+        const sourceBadge = plan.source === 'พิมพ์แผนจัดซื้อ' 
+          ? `<span class="badge bg-light text-primary border" style="font-size:0.7rem;"><i class="fas fa-print me-1"></i>พิมพ์แล้ว</span>`
+          : `<span class="badge bg-light text-secondary border" style="font-size:0.7rem;"><i class="fas fa-save me-1"></i>ฉบับร่าง</span>`;
+
+        html += `
+          <div class="glass-card p-3 p-md-3.5 mb-3 bg-white shadow-sm border" id="plan-card-${plan.id}" style="border-radius: 14px; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+            <!-- Top Row: Title, Date, Actions -->
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2 pb-2 border-bottom">
+              <div class="d-flex align-items-start gap-2.5">
+                <div class="rounded-3 bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; font-size: 0.9rem;">
+                  #${idx + 1}
+                </div>
+                <div>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h6 class="fw-bold mb-0 text-dark-emphasis" style="font-size: 1.02rem;" id="plan-name-text-${plan.id}">${plan.name || 'แผนจัดซื้อพัสดุ'}</h6>
+                    ${sourceBadge}
+                    <button class="btn btn-link btn-sm p-0 text-muted" onclick="renameBudgetPlanHistory('${plan.id}')" title="แก้ไขชื่อแผน">
+                      <i class="fas fa-pencil-alt" style="font-size: 0.75rem;"></i>
+                    </button>
+                  </div>
+                  <div class="small text-muted-ios mt-0.5" style="font-size: 0.78rem;">
+                    <i class="far fa-calendar-alt me-1"></i>${plan.dateStr} เวลา ${plan.timeStr} น.
+                    <span class="mx-1">•</span>
+                    <i class="far fa-user me-1"></i>${plan.creatorName || '-'}
+                    <span class="mx-1">•</span>
+                    <code class="small text-secondary" style="font-size: 0.72rem;">${plan.id}</code>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main Action Buttons -->
+              <div class="d-flex align-items-center gap-1.5 flex-wrap ms-auto">
+                <button type="button" class="btn btn-ios btn-ios-primary btn-sm px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5" onclick="loadBudgetPlanToEditor('${plan.id}')" title="ดึงรายการและจำนวนกลับเข้าสู่หน้าจอวางแผนงบประมาณ">
+                  <i class="fas fa-sync-alt"></i><span>โหลดมาแก้ไข</span>
+                </button>
+                <button type="button" class="btn btn-ios btn-ios-secondary btn-sm px-2.5 py-1.5 d-flex align-items-center gap-1" onclick="reprintBudgetPlan('${plan.id}')" title="สั่งพิมพ์เอกสาร A4 แผนนี้">
+                  <i class="fas fa-print text-primary"></i><span class="d-none d-sm-inline">พิมพ์</span>
+                </button>
+                <button type="button" class="btn btn-ios btn-ios-secondary btn-sm px-2.5 py-1.5 d-flex align-items-center gap-1" onclick="exportBudgetPlanHistoryCSV('${plan.id}')" title="ส่งออก CSV แผนนี้">
+                  <i class="fas fa-file-excel text-success"></i><span class="d-none d-sm-inline">CSV</span>
+                </button>
+                <button type="button" class="btn btn-ios btn-ios-secondary btn-sm px-2 py-1.5 text-danger" onclick="deleteBudgetPlanHistory('${plan.id}')" title="ลบแผนนี้">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Middle Row: Financial & Quantity KPI Metrics -->
+            <div class="row g-2 align-items-center py-2">
+              <div class="col-6 col-sm-3">
+                <span class="small text-muted-ios d-block" style="font-size:0.75rem;">วงเงินงบประมาณ</span>
+                <span class="fw-bold text-primary fs-6">฿${(plan.totalBudget || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+              </div>
+              <div class="col-6 col-sm-3">
+                <span class="small text-muted-ios d-block" style="font-size:0.75rem;">ยอดประมาณการจัดซื้อ</span>
+                <span class="fw-bold text-info fs-6">฿${(plan.totalSpent || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
+              </div>
+              <div class="col-6 col-sm-3">
+                <span class="small text-muted-ios d-block" style="font-size:0.75rem;">สถานะงบประมาณ</span>
+                ${statusBadge}
+              </div>
+              <div class="col-6 col-sm-3">
+                <span class="small text-muted-ios d-block" style="font-size:0.75rem;">จำนวนรายการ</span>
+                <span class="fw-bold text-dark-emphasis fs-6">${plan.itemsCount || 0} รายการ</span>
+                <span class="badge bg-secondary-subtle text-secondary py-0.5 px-1.5 ms-1" style="font-size:0.7rem;">${(plan.totalUnits || 0).toLocaleString()} ชิ้น</span>
+              </div>
+            </div>
+
+            <!-- Bottom Row: Expand / Collapse Item Details -->
+            <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+              <button class="btn btn-link btn-sm p-0 text-decoration-none small text-muted-ios d-flex align-items-center gap-1" type="button" onclick="toggleBudgetHistoryDetails('${plan.id}')" id="btn-toggle-${plan.id}">
+                <i class="fas fa-chevron-down text-primary" id="icon-toggle-${plan.id}"></i>
+                <span>ดูรายละเอียด ${plan.itemsCount || 0} รายการในแผนนี้</span>
+              </button>
+              <span class="small text-muted" style="font-size:0.75rem;">
+                ${(plan.itemsSnapshot || []).slice(0, 3).map(i => i.name).join(', ')}${(plan.itemsSnapshot || []).length > 3 ? '...' : ''}
+              </span>
+            </div>
+
+            <!-- Collapsible Items Table -->
+            <div class="hidden mt-3" id="details-${plan.id}">
+              <div class="table-responsive rounded-3 border" style="max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.8rem;">
+                  <thead class="table-light sticky-top">
+                    <tr>
+                      <th class="text-center" style="width:40px;">#</th>
+                      <th style="width:80px;" class="text-center">รหัส</th>
+                      <th>รายการพัสดุ</th>
+                      <th>หมวดหมู่</th>
+                      <th class="text-end" style="width:90px;">ราคา/หน่วย</th>
+                      <th class="text-center" style="width:90px;">จำนวนที่ซื้อ</th>
+                      <th class="text-end" style="width:110px;">รวมเป็นเงิน</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(plan.itemsSnapshot || []).map((it, i) => `
+                      <tr>
+                        <td class="text-center text-muted">${i + 1}</td>
+                        <td class="text-center"><span class="badge bg-light text-dark border">${it.id}</span></td>
+                        <td class="fw-bold">${it.name}</td>
+                        <td class="text-muted">${it.category || '-'}</td>
+                        <td class="text-end">฿${(it.unitPrice || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td class="text-center fw-bold text-primary">+${(it.planQty || 0).toLocaleString()} ${it.unit || 'ชิ้น'}</td>
+                        <td class="text-end fw-bold text-primary">฿${(it.subtotal || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function toggleBudgetHistoryDetails(planId) {
+      const details = document.getElementById(`details-${planId}`);
+      const icon = document.getElementById(`icon-toggle-${planId}`);
+      const btn = document.getElementById(`btn-toggle-${planId}`);
+      if (!details) return;
+
+      const isHidden = details.classList.contains('hidden');
+      if (isHidden) {
+        details.classList.remove('hidden');
+        if (icon) icon.className = 'fas fa-chevron-up text-primary';
+      } else {
+        details.classList.add('hidden');
+        if (icon) icon.className = 'fas fa-chevron-down text-primary';
+      }
+    }
+
+    async function loadBudgetPlanToEditor(planId) {
+      const history = getBudgetHistory();
+      const plan = history.find(p => p.id === planId);
+      if (!plan) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลแผนจัดซื้อที่เลือก', 'error');
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: 'โหลดแผนจัดซื้อมาแก้ไข?',
+        html: `
+          <div class="text-start p-2 small">
+            <div>ต้องการนำแผน: <strong>${plan.name}</strong></div>
+            <div class="text-muted mt-1">วงเงิน: <strong>฿${(plan.totalBudget || 0).toLocaleString()} บาท</strong> | รายการ: <strong>${plan.itemsCount || 0} รายการ (${(plan.totalUnits || 0).toLocaleString()} ชิ้น)</strong></div>
+            <div class="text-danger mt-2">⚠️ ระบบจะแทนที่รายการที่กำลังเลือกอยู่บนหน้าจอด้วยข้อมูลจากแผนนี้</div>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-sync-alt me-1"></i>ยืนยันโหลดมาแก้ไข',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { confirmButton: 'btn btn-ios btn-ios-primary', cancelButton: 'btn btn-ios btn-ios-secondary' },
+        buttonsStyling: false
+      });
+
+      if (!result.isConfirmed) return;
+
+      // 1. Update live budgetState
+      budgetState.totalBudget = Number(plan.totalBudget) || 200000;
+      budgetState.selectedItems = JSON.parse(JSON.stringify(plan.selectedItems || {}));
+
+      // 2. Update Input and Save
+      const input = document.getElementById('budget-amount-input');
+      if (input) {
+        input.value = formatMoneyNumber(budgetState.totalBudget);
+      }
+      saveBudgetStateToCache();
+
+      // 3. Recalculate & Re-render
+      calculateBudgetTotals();
+      renderBudgetTable();
+
+      // 4. Close Modal
+      const modalEl = document.getElementById('modal-budget-history');
+      if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+      }
+
+      // 5. Success Toast
+      Swal.fire({
+        icon: 'success',
+        title: `โหลดแผน "${plan.name}" สำเร็จ!`,
+        text: `ดึงข้อมูล ${plan.itemsCount || 0} รายการกลับมาบนหน้าจอเรียบร้อยแล้ว สามารถปรับแก้จำนวนหรือเลือกรายการเพิ่มได้ทันที`,
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+
+      // 6. Smooth scroll to top of planner
+      const plannerHeader = document.querySelector('#tab-budget .page-main-title');
+      if (plannerHeader) {
+        plannerHeader.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    async function renameBudgetPlanHistory(planId) {
+      const history = getBudgetHistory();
+      const plan = history.find(p => p.id === planId);
+      if (!plan) return;
+
+      const { value: newName } = await Swal.fire({
+        title: 'แก้ไขชื่อแผนจัดซื้อ',
+        input: 'text',
+        inputValue: plan.name || '',
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { confirmButton: 'btn btn-ios btn-ios-primary', cancelButton: 'btn btn-ios btn-ios-secondary' },
+        buttonsStyling: false
+      });
+
+      if (newName && newName.trim()) {
+        plan.name = newName.trim();
+        saveBudgetHistory(history);
+        renderBudgetHistoryList(document.getElementById('budget-history-search')?.value || '');
+      }
+    }
+
+    async function deleteBudgetPlanHistory(planId) {
+      const history = getBudgetHistory();
+      const plan = history.find(p => p.id === planId);
+      if (!plan) return;
+
+      const result = await Swal.fire({
+        title: 'ลบประวัติแผนจัดซื้อ?',
+        text: `คุณต้องการลบ "${plan.name}" ออกจากประวัติใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ff3b30'
+      });
+
+      if (!result.isConfirmed) return;
+
+      const updated = history.filter(p => p.id !== planId);
+      saveBudgetHistory(updated);
+      renderBudgetHistoryList(document.getElementById('budget-history-search')?.value || '');
+      updateBudgetHistoryBadge();
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'ลบประวัติแผนจัดซื้อเรียบร้อยแล้ว',
+        showConfirmButton: false,
+        timer: 1500
+      });
+    }
+
+    async function clearAllBudgetHistory() {
+      const history = getBudgetHistory();
+      if (history.length === 0) return;
+
+      const result = await Swal.fire({
+        title: 'ล้างประวัติแผนจัดซื้อทั้งหมด?',
+        text: 'การกระทำนี้จะลบประวัติแผนจัดซื้อที่บันทึกไว้ทั้งหมด และไม่สามารถกู้คืนได้',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ล้างทั้งหมด',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ff3b30'
+      });
+
+      if (!result.isConfirmed) return;
+
+      saveBudgetHistory([]);
+      renderBudgetHistoryList('');
+      updateBudgetHistoryBadge();
+    }
+
+    function reprintBudgetPlan(planId) {
+      const history = getBudgetHistory();
+      const plan = history.find(p => p.id === planId);
+      if (!plan || !plan.itemsSnapshot) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลรายการในแผนนี้', 'error');
+        return;
+      }
+
+      const totalBudget = Number(plan.totalBudget) || 0;
+      const totalSpent = Number(plan.totalSpent) || 0;
+      const totalUnits = Number(plan.totalUnits) || 0;
+      const remaining = plan.remaining != null ? plan.remaining : (totalBudget - totalSpent);
+      const isOver = plan.isOver || (totalSpent > totalBudget);
+      const utilPercent = totalBudget > 0 ? ((totalSpent / totalBudget) * 100) : 0;
+
+      const dateStr = plan.dateStr || new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timeStr = plan.timeStr || new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+      const creatorName = plan.creatorName || (currentUser ? currentUser.name : 'เจ้าหน้าที่');
+      const creatorPos = plan.creatorPosition || (currentUser ? (currentUser.position || 'ผู้ช่วยเจ้าหน้าที่ธุรการ') : 'ผู้ช่วยเจ้าหน้าที่ธุรการ');
+
+      let rowsHtml = '';
+      plan.itemsSnapshot.forEach((it, idx) => {
+        const rem = Number(it.qtyRemaining != null ? it.qtyRemaining : (it.qty || 0)) || 0;
+        const minVal = (it.minStock != null && !isNaN(Number(it.minStock))) ? Number(it.minStock) : 5;
+        const maxVal = (it.maxStock != null && !isNaN(Number(it.maxStock))) ? Number(it.maxStock) : 20;
+
+        rowsHtml += `
+          <tr>
+            <td class="text-center">${idx + 1}</td>
+            <td class="text-center fw-bold">${it.id || '-'}</td>
+            <td><strong>${it.name || '-'}</strong></td>
+            <td>${it.category || '-'}</td>
+            <td class="text-center">${rem.toLocaleString()}</td>
+            <td class="text-center">${minVal} / ${maxVal}</td>
+            <td class="text-end">฿${(it.unitPrice || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="text-center fw-bold" style="color:#0056b3; font-size:1.05rem;">+${(it.planQty || 0).toLocaleString()}</td>
+            <td class="text-center">${it.unit || 'ชิ้น'}</td>
+            <td class="text-end fw-bold" style="color:#0056b3;">฿${(it.subtotal || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="text-center" style="font-size:0.8rem;">${rem <= minVal ? 'พัสดุใกล้หมด/หมด' : 'จัดหาสำรอง'}</td>
+          </tr>
+        `;
+      });
+
+      const printHtml = `
+        <div class="p-2" style="font-family:'Sarabun', 'Segoe UI', Tahoma, sans-serif; color:#111; background:#fff;">
+          <!-- HEADER -->
+          <div class="text-center mb-3 pb-2 border-bottom">
+            <h3 class="fw-bold mb-1" style="font-size:1.45rem; color:#0f172a;">แบบสรุปแผนประมาณการบริหารงบประมาณจัดซื้อพัสดุ / วัสดุ</h3>
+            <h5 class="mb-1 text-muted" style="font-size:1.1rem; font-weight:600; color:#334155;">ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง</h5>
+            <p class="small text-muted mb-0">
+              ชื่อแผน: <strong>${plan.name || 'แผนจัดซื้อพัสดุ'}</strong> | วันที่พิมพ์แผน: ${dateStr} เวลา ${timeStr} น. | ผู้จัดทำแผน: <strong>${creatorName}</strong> (${creatorPos})
+            </p>
+          </div>
+
+          <!-- KPI SUMMARY BOXES -->
+          <div class="row g-2 mb-3">
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:#eaf3ff; border:1px solid #b3d1ff;">
+                <div class="small fw-semibold text-muted">วงเงินงบประมาณที่ตั้งไว้</div>
+                <div class="fw-bold" style="font-size:1.35rem; color:#007aff;">฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:#f0f9ff; border:1px solid #bae6fd;">
+                <div class="small fw-semibold text-muted">ยอดประมาณการจัดซื้อรวม</div>
+                <div class="fw-bold" style="font-size:1.35rem; color:#0284c7;">฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:${isOver ? '#fef2f2' : '#f0fdf4'}; border:1px solid ${isOver ? '#fca5a5' : '#86efac'};">
+                <div class="small fw-semibold text-muted">${isOver ? 'เกินวงเงินงบประมาณ' : 'งบประมาณคงเหลือสุทธิ'}</div>
+                <div class="fw-bold" style="font-size:1.35rem; color:${isOver ? '#dc2626' : '#16a34a'};">
+                  ฿${Math.abs(remaining).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
+                </div>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 rounded text-center" style="background:#faf5ff; border:1px solid #e9d5ff;">
+                <div class="small fw-semibold text-muted">รายการ / จำนวนชิ้นรวม</div>
+                <div class="fw-bold" style="font-size:1.35rem; color:#9333ea;">${plan.itemsSnapshot.length} รายการ (${totalUnits.toLocaleString()} ชิ้น)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MAIN PROCUREMENT ITEMS TABLE -->
+          <table class="table table-bordered table-sm align-middle mb-2" style="font-size:0.85rem; border-color:#94a3b8;">
+            <thead style="background:#f1f5f9;">
+              <tr class="text-center">
+                <th style="width:40px;">ลำดับ</th>
+                <th style="width:85px;">รหัสพัสดุ</th>
+                <th>รายการพัสดุ / ชนิดวัสดุ</th>
+                <th style="width:140px;">หมวดหมู่</th>
+                <th style="width:75px;">คงเหลือ</th>
+                <th style="width:80px;">Min / Max</th>
+                <th style="width:90px;" class="text-end">ราคา/หน่วย</th>
+                <th style="width:90px;" class="text-center">จำนวนที่จัดซื้อ</th>
+                <th style="width:65px;" class="text-center">หน่วยนับ</th>
+                <th style="width:110px;" class="text-end">รวมเป็นเงิน (บาท)</th>
+                <th style="width:110px;">หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+              <tr style="background:#f8fafc; font-weight:bold;">
+                <td colspan="7" class="text-end py-2">รวมประมาณการจัดซื้อทั้งสิ้น (${plan.itemsSnapshot.length} รายการ):</td>
+                <td class="text-center py-2" style="color:#0056b3; font-size:1rem;">+${totalUnits.toLocaleString()}</td>
+                <td class="text-center py-2">ชิ้น</td>
+                <td class="text-end py-2" style="color:#0056b3; font-size:1.05rem;">฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td></td>
+              </tr>
+              <tr style="background:#f1f5f9; font-weight:bold;">
+                <td colspan="7" class="text-end py-2">วงเงินงบประมาณที่ได้รับจัดสรร:</td>
+                <td colspan="2" class="text-center py-2">สัดส่วนใช้ไป ${utilPercent.toFixed(1)}%</td>
+                <td class="text-end py-2" style="color:#007aff;">฿${totalBudget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td></td>
+              </tr>
+              <tr style="background:${isOver ? '#fef2f2' : '#f0fdf4'}; font-weight:bold;">
+                <td colspan="7" class="text-end py-2">${isOver ? 'งบประมาณเกินวงเงิน:' : 'งบประมาณคงเหลือสุทธิ:'}</td>
+                <td colspan="2" class="text-center py-2">${isOver ? '⚠️ เกินงบ' : '✓ งบเพียงพอ'}</td>
+                <td class="text-end py-2" style="color:${isOver ? '#dc2626' : '#16a34a'}; font-size:1.1rem;">฿${remaining.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      const printArea = document.getElementById('print-area');
+      if (!printArea) { window.print(); return; }
+
+      setPrintPageOrientation('landscape');
+      printArea.innerHTML = printHtml;
+      document.body.classList.add('printing-report');
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          document.body.classList.remove('printing-report');
+          printArea.innerHTML = '';
+        }, 1500);
+      }, 50);
+    }
+
+    function exportBudgetPlanHistoryCSV(planId) {
+      const history = getBudgetHistory();
+      const plan = history.find(p => p.id === planId);
+      if (!plan || !plan.itemsSnapshot) return;
+
+      const totalBudget = Number(plan.totalBudget) || 0;
+      let totalSpent = 0;
+      let totalUnits = 0;
+
+      const now = new Date();
+      const dateFileStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const timeFileStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+      let csv = '\uFEFF'; // UTF-8 BOM for MS Excel
+      csv += `แผนประมาณการบริหารงบประมาณจัดซื้อพัสดุ / วัสดุ ส่วนการโยธา สำนักช่าง เทศบาลนครระยอง\n`;
+      csv += `ชื่อแผน:,"${(plan.name || '').replace(/"/g, '""')}",วันที่จัดทำ:,"${plan.dateStr} ${plan.timeStr} น.",ผู้จัดทำ:,"${(plan.creatorName || '').replace(/"/g, '""')}"\n`;
+      csv += `วงเงินงบประมาณที่ตั้งไว้ (บาท):,${totalBudget}\n\n`;
+
+      csv += 'ลำดับ,รหัสพัสดุ,รายการพัสดุ,หมวดหมู่,สต๊อกคงเหลือ,เกณฑ์ Min,เกณฑ์ Max,ราคาต่อหน่วย (บาท),จำนวนที่วางแผนจัดซื้อ,หน่วยนับ,รวมเป็นเงิน (บาท)\n';
+
+      plan.itemsSnapshot.forEach((it, idx) => {
+        const qty = Number(it.planQty) || 0;
+        const price = Number(it.unitPrice) || 0;
+        const subtotal = Number(it.subtotal) || (qty * price);
+        totalSpent += subtotal;
+        totalUnits += qty;
+
+        const row = [
+          idx + 1,
+          `"${(it.id || '').replace(/"/g, '""')}"`,
+          `"${(it.name || '').replace(/"/g, '""')}"`,
+          `"${(it.category || '').replace(/"/g, '""')}"`,
+          it.qtyRemaining || 0,
+          it.minStock || 5,
+          it.maxStock || 20,
+          price,
+          qty,
+          `"${(it.unit || 'ชิ้น').replace(/"/g, '""')}"`,
+          subtotal
+        ];
+        csv += row.join(',') + '\n';
+      });
+
+      const remaining = totalBudget - totalSpent;
+      csv += `\n"รวมทั้งสิ้น (${plan.itemsSnapshot.length} รายการ)",,,,,,,,"${totalUnits}","ชิ้น","${totalSpent}"\n`;
+      csv += `"วงเงินงบประมาณที่ตั้งไว้",,,,,,,,,,"${totalBudget}"\n`;
+      csv += `"${remaining >= 0 ? 'งบประมาณคงเหลือ' : 'งบประมาณเกินวงเงิน'}",,,,,,,,,,"${remaining}"\n`;
+
+      downloadCSVFile(csv, `แผนจัดซื้อ_${(plan.name || 'พัสดุ').replace(/\s+/g, '_')}_${dateFileStr}_${timeFileStr}.csv`);
+    }
+
   </script>
 </body>
 </html>
