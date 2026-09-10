@@ -17,7 +17,7 @@
           const parsed = JSON.parse(auth);
           if (parsed && parsed.id && parsed.pass) {
             // Instantly hide login and show app layout before first frame renders
-            document.write('<style id="pre-auth-style">#view-login, #login-theme-btn-wrapper { display: none !important; } #view-app { display: block !important; }</style>');
+            document.write('<style id="pre-auth-style">#view-login, #login-theme-btn-wrapper { display: none !important; } #view-app { display: block !important; }<\/style>');
           }
         }
       } catch(e) {}
@@ -1478,6 +1478,40 @@
         font-size: 0.7rem;
       }
     }
+  
+    /* Compact, Responsive Budget Planner Table & Custom Scrollbar */
+    .budget-table-wrapper {
+      scrollbar-width: thin;
+      scrollbar-color: var(--ios-primary) rgba(0, 122, 255, 0.08);
+      -webkit-overflow-scrolling: touch;
+    }
+    .budget-table-wrapper::-webkit-scrollbar {
+      height: 7px;
+      width: 7px;
+    }
+    .budget-table-wrapper::-webkit-scrollbar-track {
+      background: rgba(0, 122, 255, 0.06);
+      border-radius: 8px;
+    }
+    .budget-table-wrapper::-webkit-scrollbar-thumb {
+      background: rgba(0, 122, 255, 0.55);
+      border-radius: 8px;
+    }
+    .budget-table-wrapper::-webkit-scrollbar-thumb:hover {
+      background: var(--ios-primary);
+    }
+    #budget-planner-table th {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: #334155;
+      padding: 9px 8px;
+      white-space: nowrap;
+    }
+    #budget-planner-table td {
+      padding: 7px 8px;
+      font-size: 0.86rem;
+    }
+
   </style>
 </head>
 
@@ -2406,23 +2440,20 @@
               </div>
 
               <!-- Interactive Procurement Items Table -->
-              <div class="table-responsive">
-                <table class="table table-ios w-100 align-middle" id="budget-planner-table">
-                  <thead>
+              <div class="table-responsive budget-table-wrapper rounded-3 border" style="overflow-x: auto;">
+                <table class="table table-ios table-hover w-100 align-middle mb-0" id="budget-planner-table" style="table-layout: auto;">
+                  <thead class="table-light">
                     <tr>
-                      <th style="width: 44px; text-align: center;">
+                      <th style="width: 38px; text-align: center;" class="text-center py-2.5">
                         <input type="checkbox" id="budget-select-all-cb" class="form-check-input" style="cursor: pointer; width: 1.15em; height: 1.15em;" onchange="toggleSelectAllBudgetCheckbox(this.checked)" title="เลือก/ยกเลิกทั้งหมด">
                       </th>
-                      <th style="min-width: 50px;" class="text-center">ลำดับ</th>
-                      <th style="min-width: 90px;" class="text-center">รหัส</th>
-                      <th style="min-width: 220px;">รายการพัสดุ</th>
-                      <th style="min-width: 140px;">หมวดหมู่</th>
-                      <th style="min-width: 110px;" class="text-center">สต๊อกคงเหลือ</th>
-                      <th style="min-width: 100px;" class="text-center">Min / Max</th>
-                      <th style="min-width: 110px;" class="text-end">ราคา/หน่วย</th>
-                      <th style="min-width: 160px;" class="text-center">จำนวนที่ต้องการซื้อ</th>
-                      <th style="min-width: 130px;" class="text-end">รวมเป็นเงิน (บาท)</th>
-                      <th style="min-width: 100px;" class="text-center">จัดการ</th>
+                      <th style="width: 45px;" class="text-center py-2.5">#</th>
+                      <th style="width: 75px;" class="text-center py-2.5">รหัส</th>
+                      <th style="width: 38%; min-width: 220px;" class="py-2.5">รายการพัสดุ / หมวดหมู่</th>
+                      <th style="width: 14%; min-width: 120px;" class="text-center py-2.5">สต๊อก &amp; เกณฑ์</th>
+                      <th style="width: 11%; min-width: 90px;" class="text-end py-2.5">ราคา/หน่วย</th>
+                      <th style="width: 14%; min-width: 130px;" class="text-center py-2.5">จำนวนที่ต้องการซื้อ</th>
+                      <th style="width: 11%; min-width: 100px;" class="text-end py-2.5">รวมเป็นเงิน</th>
                     </tr>
                   </thead>
                   <tbody id="budget-table-body">
@@ -3064,7 +3095,7 @@
       return text ? JSON.parse(text) : null;
     }
 
-    // Direct Supabase API Router (Handles all 14 actions natively)
+    // Direct Supabase API Router (Handles all actions natively)
     async function apiCall(action, ...args) {
       try {
         if (action === 'loginUser') {
@@ -3072,11 +3103,11 @@
           const password = String(args[1] || '').trim();
           const rows = await _dbFetch('users?id=eq.' + encodeURIComponent(userId) + '&password=eq.' + encodeURIComponent(password) + '&select=*');
           if (!rows || rows.length === 0) {
-            return { success: false, message: 'รหัสผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง' };
+            return { success: false, message: 'รหัสผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง', msg: 'รหัสผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง' };
           }
           const u = rows[0];
-          if (u.status && u.status.toUpperCase() === 'INACTIVE') {
-            return { success: false, message: 'บัญชีผู้ใช้นี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ' };
+          if (u.status && (u.status.toUpperCase() === 'INACTIVE' || u.status.toUpperCase() === 'SUSPENDED')) {
+            return { success: false, message: 'บัญชีผู้ใช้นี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ', msg: 'บัญชีผู้ใช้นี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ' };
           }
           return {
             success: true,
@@ -3102,11 +3133,12 @@
             ? 'requisitions?select=*&order=date_time.desc' 
             : 'requisitions?user_id=eq.' + encodeURIComponent(userId) + '&select=*&order=date_time.desc';
 
-          const [itemsRaw, reqsRaw, usersRaw, logsRaw] = await Promise.all([
+          const [itemsRaw, reqsRaw, usersRaw, logsRaw, plansRaw] = await Promise.all([
             _dbFetch('items?select=*&order=id.asc'),
             _dbFetch(reqQuery),
             isAdmin ? _dbFetch('users?select=*&order=id.asc') : Promise.resolve([]),
-            _dbFetch('stock_logs?select=*&order=date_time.desc&limit=200')
+            _dbFetch('stock_logs?select=*&order=date_time.desc&limit=200'),
+            _dbFetch('procurement_plans?select=*&order=created_at.desc').catch(() => [])
           ]);
 
           const items = (itemsRaw || []).map(r => ({
@@ -3173,6 +3205,25 @@
             remark: l.notes || ''
           }));
 
+          const procurementPlans = (plansRaw || []).map(p => ({
+            id: p.plan_id,
+            name: p.name,
+            createdAt: p.created_at,
+            dateStr: p.date_str,
+            timeStr: p.time_str,
+            creatorName: p.creator_name,
+            creatorPosition: p.creator_position,
+            totalBudget: Number(p.total_budget) || 0,
+            totalSpent: Number(p.total_spent) || 0,
+            remaining: Number(p.remaining) || 0,
+            isOver: Boolean(p.is_over),
+            itemsCount: Number(p.items_count) || 0,
+            totalUnits: Number(p.total_units) || 0,
+            selectedItems: typeof p.selected_items === 'string' ? JSON.parse(p.selected_items || '{}') : (p.selected_items || {}),
+            itemsSnapshot: typeof p.items_snapshot === 'string' ? JSON.parse(p.items_snapshot || '[]') : (p.items_snapshot || []),
+            source: p.source || 'บันทึกแผน'
+          }));
+
           let lowStockCount = 0;
           let totalStockValue = 0;
           const categoryCounts = {};
@@ -3190,6 +3241,7 @@
             requests,
             users,
             stockLogs,
+            procurementPlans,
             stats: {
               totalItems: items.length,
               lowStockCount,
@@ -3403,23 +3455,44 @@
 
         if (action === 'saveItem') {
           const item = args[0] || {};
-          const itemId = String(item.id || '').trim();
-          if (!itemId) throw new Error('กรุณาระบุรหัสพัสดุ');
+          let itemId = String(item.id || '').trim();
 
-          const itRows = await _dbFetch('items?id=eq.' + encodeURIComponent(itemId) + '&select=*');
+          let itRows = null;
+          if (itemId) {
+            itRows = await _dbFetch('items?id=eq.' + encodeURIComponent(itemId) + '&select=*');
+          }
+
           const isNew = (!itRows || itRows.length === 0);
+
+          if (isNew && !itemId) {
+            // Auto-generate next item ID: A{number}
+            const allItems = await _dbFetch('items?select=id');
+            let maxNum = 0;
+            (allItems || []).forEach(r => {
+              const match = String(r.id || '').trim().match(/^A(d+)$/i);
+              if (match) {
+                const val = parseInt(match[1], 10);
+                if (val > maxNum) maxNum = val;
+              }
+            });
+            itemId = 'A' + (maxNum + 1);
+          }
+
           const oldStock = isNew ? 0 : (Number(itRows[0].stock) || 0);
-          const newStock = Number(item.stock != null ? item.stock : (item.qtyRemaining != null ? item.qtyRemaining : 0));
+          const newStock = Number(item.stock != null ? item.stock : (item.qtyRemaining != null ? item.qtyRemaining : (item.qty != null ? item.qty : 0)));
+          const unitPrice = Number(item.price != null ? item.price : (item.unitPrice != null ? item.unitPrice : (item.price_per_unit != null ? item.price_per_unit : 0)));
+          const minQty = Number(item.minStock != null ? item.minStock : (item.minQty != null ? item.minQty : 5));
+          const maxQty = Number(item.maxStock != null ? item.maxStock : (item.maxQty != null ? item.maxQty : 20));
 
           const payload = {
             id: itemId,
-            name: item.name,
+            name: item.name || '',
             category: item.category || 'ทั่วไป',
             unit: item.unit || 'ชิ้น',
-            stock: newStock,
-            min_qty: Number(item.minStock != null ? item.minStock : (item.minQty != null ? item.minQty : 5)),
-            max_qty: Number(item.maxStock != null ? item.maxStock : (item.maxQty != null ? item.maxQty : 20)),
-            price_per_unit: Number(item.price != null ? item.price : (item.unitPrice != null ? item.unitPrice : 0)),
+            stock: isNaN(newStock) ? 0 : newStock,
+            min_qty: isNaN(minQty) ? 5 : minQty,
+            max_qty: isNaN(maxQty) ? 20 : maxQty,
+            price_per_unit: isNaN(unitPrice) ? 0 : unitPrice,
             image_url: item.image || item.image_url || ''
           };
 
@@ -3434,15 +3507,15 @@
                 log_id: 'LOG-' + Date.now() + '-' + itemId,
                 date_time: new Date().toISOString(),
                 item_id: itemId,
-                item_name: item.name,
+                item_name: payload.name,
                 category: payload.category,
                 action_type: 'เพิ่มพัสดุใหม่',
-                qty_change: newStock,
-                resulting_stock: newStock,
+                qty_change: payload.stock,
+                resulting_stock: payload.stock,
                 unit_price: payload.price_per_unit,
-                total_val: newStock * payload.price_per_unit,
+                total_val: payload.stock * payload.price_per_unit,
                 operator: item.operatorName || 'เจ้าหน้าที่พัสดุ',
-                notes: item.docNo || 'รับเข้าพัสดุใหม่'
+                notes: item.docNo || item.remark || 'รับเข้าพัสดุใหม่'
               }])
             });
           } else {
@@ -3450,34 +3523,37 @@
               method: 'PATCH',
               body: JSON.stringify(payload)
             });
-            if (newStock !== oldStock) {
-              const diff = newStock - oldStock;
+            if (payload.stock !== oldStock) {
+              const diff = payload.stock - oldStock;
               await _dbFetch('stock_logs', {
                 method: 'POST',
                 body: JSON.stringify([{
                   log_id: 'LOG-' + Date.now() + '-' + itemId,
                   date_time: new Date().toISOString(),
                   item_id: itemId,
-                  item_name: item.name,
+                  item_name: payload.name,
                   category: payload.category,
                   action_type: diff > 0 ? 'เติมสต๊อก / นำเข้า' : 'ปรับลดยอดสต๊อก',
                   qty_change: diff,
-                  resulting_stock: newStock,
+                  resulting_stock: payload.stock,
                   unit_price: payload.price_per_unit,
                   total_val: Math.abs(diff) * payload.price_per_unit,
                   operator: item.operatorName || 'เจ้าหน้าที่พัสดุ',
-                  notes: item.docNo || 'ปรับปรุงยอดสต๊อก'
+                  notes: item.docNo || item.remark || 'ปรับปรุงยอดสต๊อก'
                 }])
               });
             }
           }
           return {
             success: true,
+            msg: 'บันทึกข้อมูลพัสดุเรียบร้อยแล้ว',
+            message: 'บันทึกข้อมูลพัสดุเรียบร้อยแล้ว',
             item: {
               id: itemId,
               name: payload.name,
               category: payload.category,
               unit: payload.unit,
+              stock: payload.stock,
               qtyRemaining: payload.stock,
               price: payload.price_per_unit,
               unitPrice: payload.price_per_unit,
@@ -3515,7 +3591,7 @@
               }])
             });
           }
-          return { success: true };
+          return { success: true, msg: 'ลบรายการพัสดุเรียบร้อยแล้ว' };
         }
 
         if (action === 'getUsers') {
@@ -3573,19 +3649,92 @@
               });
             }
           }
-          return { success: true };
+          return { success: true, msg: 'บันทึกข้อมูลผู้ใช้เรียบร้อยแล้ว' };
         }
 
         if (action === 'deleteUser') {
           const uid = args[0];
           await _dbFetch('users?id=eq.' + encodeURIComponent(uid), { method: 'DELETE' });
-          return { success: true };
+          return { success: true, msg: 'ลบผู้ใช้เรียบร้อยแล้ว' };
+        }
+
+        if (action === 'saveProcurementPlan') {
+          const plan = args[0] || {};
+          if (!plan.id) throw new Error('กรุณาระบุรหัสแผนจัดซื้อ');
+          const payload = {
+            plan_id: plan.id,
+            name: plan.name || 'แผนจัดซื้อพัสดุ',
+            created_at: plan.createdAt || new Date().toISOString(),
+            date_str: plan.dateStr || '',
+            time_str: plan.timeStr || '',
+            creator_name: plan.creatorName || '',
+            creator_position: plan.creatorPosition || '',
+            total_budget: Number(plan.totalBudget) || 0,
+            total_spent: Number(plan.totalSpent) || 0,
+            remaining: Number(plan.remaining) || 0,
+            is_over: Boolean(plan.isOver),
+            items_count: Number(plan.itemsCount) || 0,
+            total_units: Number(plan.totalUnits) || 0,
+            selected_items: typeof plan.selectedItems === 'object' ? JSON.stringify(plan.selectedItems) : (plan.selectedItems || '{}'),
+            items_snapshot: typeof plan.itemsSnapshot === 'object' ? JSON.stringify(plan.itemsSnapshot) : (plan.itemsSnapshot || '[]'),
+            source: plan.source || 'บันทึกแผน'
+          };
+          await _dbFetch('procurement_plans', {
+            method: 'POST',
+            body: JSON.stringify([payload])
+          });
+          return { success: true, msg: 'บันทึกแผนจัดซื้อลง Supabase สำเร็จ' };
+        }
+
+        if (action === 'renameProcurementPlan') {
+          const planId = args[0];
+          const newName = args[1];
+          await _dbFetch('procurement_plans?plan_id=eq.' + encodeURIComponent(planId), {
+            method: 'PATCH',
+            body: JSON.stringify({ name: newName })
+          });
+          return { success: true, msg: 'เปลี่ยนชื่อแผนเรียบร้อยแล้ว' };
+        }
+
+        if (action === 'deleteProcurementPlan') {
+          const planId = args[0];
+          await _dbFetch('procurement_plans?plan_id=eq.' + encodeURIComponent(planId), {
+            method: 'DELETE'
+          });
+          return { success: true, msg: 'ลบประวัติแผนจัดซื้อเรียบร้อยแล้ว' };
+        }
+
+        if (action === 'getProcurementPlans') {
+          const rows = await _dbFetch('procurement_plans?select=*&order=created_at.desc');
+          return (rows || []).map(p => ({
+            id: p.plan_id,
+            name: p.name,
+            createdAt: p.created_at,
+            dateStr: p.date_str,
+            timeStr: p.time_str,
+            creatorName: p.creator_name,
+            creatorPosition: p.creator_position,
+            totalBudget: Number(p.total_budget) || 0,
+            totalSpent: Number(p.total_spent) || 0,
+            remaining: Number(p.remaining) || 0,
+            isOver: Boolean(p.is_over),
+            itemsCount: Number(p.items_count) || 0,
+            totalUnits: Number(p.total_units) || 0,
+            selectedItems: typeof p.selected_items === 'string' ? JSON.parse(p.selected_items || '{}') : (p.selected_items || {}),
+            itemsSnapshot: typeof p.items_snapshot === 'string' ? JSON.parse(p.items_snapshot || '[]') : (p.items_snapshot || []),
+            source: p.source || 'บันทึกแผน'
+          }));
         }
 
         throw new Error('Unknown Supabase action: ' + action);
       } catch (err) {
         console.error('Supabase API Error (' + action + '):', err);
-        return { success: false, error: err.message || String(err) };
+        return { 
+          success: false, 
+          error: err.message || String(err),
+          message: err.message || String(err),
+          msg: err.message || String(err)
+        };
       }
     }
 
@@ -4251,7 +4400,7 @@
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="11" class="text-center py-5 text-muted-ios">
+            <td colspan="8" class="text-center py-5 text-muted-ios">
               <i class="fas fa-inbox fa-3x mb-3 d-block" style="opacity:0.4;"></i>
               <span>ไม่พบข้อมูลประวัติการนำเข้าตามเงื่อนไขที่ค้นหา</span>
             </td>
@@ -5844,7 +5993,7 @@
             showConfirmButton: false
           });
         } else {
-          Swal.fire('ขัดข้อง', (res && res.msg) || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+          Swal.fire('ขัดข้อง', (res && (res.msg || res.message || res.error)) || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
         }
       } catch (e) {
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + (e.message || e), 'error');
@@ -9242,20 +9391,19 @@
         : `<span class="text-success fw-bold">คงเหลือ ฿${remaining.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>`;
 
       footer.innerHTML = `
-        <tr style="border-top: 2px solid rgba(0, 122, 255, 0.2);">
-          <td colspan="5" class="text-end fw-bold py-3">
-            รวมรายการที่เลือกจัดซื้อทั้งสิ้น (${selectedCount} รายการ, ${totalUnits.toLocaleString()} ชิ้น):
+        <tr style="border-top: 2px solid rgba(0, 122, 255, 0.2); background: rgba(0, 122, 255, 0.04);">
+          <td colspan="4" class="text-end fw-bold py-2.5" style="font-size:0.88rem;">
+            รวมที่เลือกจัดซื้อ (${selectedCount} รายการ):
           </td>
-          <td colspan="3" class="text-center small py-3">
-            สถานะงบประมาณ: ${remainText}
+          <td colspan="2" class="text-center small py-2.5">
+            ${remainText}
           </td>
-          <td class="text-center fw-bold py-3" style="color: #007aff; font-size: 1.05rem;">
+          <td class="text-center fw-bold py-2.5" style="color: #007aff; font-size: 0.95rem;">
             ${totalUnits.toLocaleString()} ชิ้น
           </td>
-          <td class="text-end fw-bold py-3" style="color: ${isOver ? '#ff3b30' : '#007aff'}; font-size: 1.15rem;">
+          <td class="text-end fw-bold py-2.5" style="color: ${isOver ? '#ff3b30' : '#007aff'}; font-size: 1.05rem;">
             ฿${totalSpent.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
           </td>
-          <td></td>
         </tr>
       `;
     }
@@ -9368,43 +9516,41 @@
 
         rowsHtml += `
           <tr id="budget-row-${it.id}" class="${isSelected ? 'table-active' : ''}">
-            <td class="text-center align-middle">
-              <input type="checkbox" id="budget-cb-${it.id}" class="form-check-input" style="cursor:pointer; width:1.2em; height:1.2em;" ${isSelected ? 'checked' : ''} onchange="onBudgetItemCheck('${it.id}', this.checked)">
+            <td class="text-center align-middle py-2">
+              <input type="checkbox" id="budget-cb-${it.id}" class="form-check-input" style="cursor:pointer; width:1.15em; height:1.15em;" ${isSelected ? 'checked' : ''} onchange="onBudgetItemCheck('${it.id}', this.checked)">
             </td>
-            <td class="text-center text-muted align-middle">${idx + 1}</td>
-            <td class="text-center fw-semibold align-middle"><span class="badge bg-light text-dark border">${it.id}</span></td>
-            <td class="align-middle">
+            <td class="text-center text-muted align-middle py-2 small">${idx + 1}</td>
+            <td class="text-center fw-semibold align-middle py-2"><span class="badge bg-light text-dark border px-1.5 py-1">${it.id}</span></td>
+            <td class="align-middle py-2">
               <div class="d-flex align-items-center">
                 ${imgThumb}
-                <div>
-                  <div class="fw-bold text-dark-emphasis">${it.name}</div>
-                  <div class="small text-muted-ios" style="font-size:0.78rem;">หน่วยนับ: <strong>${unitStr}</strong></div>
+                <div class="flex-grow-1" style="min-width: 0;">
+                  <div class="fw-bold text-dark-emphasis" style="line-height: 1.35; font-size: 0.9rem; word-break: break-word;">${it.name}</div>
+                  <div class="small text-muted-ios d-flex align-items-center gap-1.5 flex-wrap mt-1" style="font-size:0.75rem;">
+                    <span class="badge bg-secondary-subtle text-secondary px-1.5 py-0.5" style="font-size:0.7rem;">${it.category || 'ทั่วไป'}</span>
+                    <span>หน่วย: <strong>${unitStr}</strong></span>
+                  </div>
                 </div>
               </div>
             </td>
-            <td class="align-middle small text-muted-ios">${it.category || '-'}</td>
-            <td class="text-center align-middle">
-              <div class="fw-bold fs-6">${rem.toLocaleString()} <span class="small fw-normal text-muted">${unitStr}</span></div>
+            <td class="text-center align-middle py-2">
+              <div class="fw-bold" style="font-size:0.9rem;">${rem.toLocaleString()} <span class="small fw-normal text-muted">${unitStr}</span></div>
+              <div class="small text-muted my-0.5" style="font-size:0.72rem;"><span class="text-danger fw-semibold">Min: ${minVal}</span> / <span class="text-primary fw-semibold">Max: ${maxVal}</span></div>
               ${statusBadge}
             </td>
-            <td class="text-center align-middle small">
-              <span class="text-danger fw-semibold">Min: ${minVal}</span> / <span class="text-primary fw-semibold">Max: ${maxVal}</span>
-            </td>
-            <td class="text-end align-middle fw-semibold">฿${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-            <td class="align-middle">
-              <div class="input-group input-group-sm justify-content-center" style="max-width: 150px; margin: 0 auto;">
-                <button type="button" class="btn btn-outline-secondary" onclick="adjustBudgetItemQty('${it.id}', -1)">-</button>
-                <input type="number" id="budget-qty-${it.id}" class="form-control text-center fw-bold" value="${itemQty}" min="0" max="9999" style="max-width: 65px;" onchange="onBudgetItemQtyChange('${it.id}', this.value)">
-                <button type="button" class="btn btn-outline-secondary" onclick="adjustBudgetItemQty('${it.id}', 1)">+</button>
+            <td class="text-end align-middle py-2 fw-semibold" style="font-size:0.86rem;">฿${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="align-middle text-center py-2">
+              <div class="input-group input-group-sm justify-content-center mx-auto" style="max-width: 105px;">
+                <button type="button" class="btn btn-outline-secondary px-1.5 py-0.5" onclick="adjustBudgetItemQty('${it.id}', -1)">-</button>
+                <input type="number" id="budget-qty-${it.id}" class="form-control text-center fw-bold px-1 py-0.5" value="${itemQty}" min="0" max="9999" style="font-size:0.88rem;" onchange="onBudgetItemQtyChange('${it.id}', this.value)">
+                <button type="button" class="btn btn-outline-secondary px-1.5 py-0.5" onclick="adjustBudgetItemQty('${it.id}', 1)">+</button>
               </div>
-            </td>
-            <td class="text-end align-middle" id="budget-subtotal-${it.id}">
-              ฿${subtotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
-            </td>
-            <td class="text-center align-middle">
-              <button type="button" class="btn btn-xs btn-ios btn-ios-secondary py-1 px-2 text-nowrap" style="font-size:0.75rem;" onclick="fillBudgetItemToMax('${it.id}')" title="ตั้งจำนวนให้เต็ม Max (${maxVal} ชิ้น)">
-                <i class="fas fa-level-up-alt text-primary me-1"></i>เติม Max
+              <button type="button" class="btn btn-link btn-xs p-0 mt-1 text-primary text-decoration-none small d-inline-flex align-items-center gap-1" style="font-size:0.72rem;" onclick="fillBudgetItemToMax('${it.id}')" title="ตั้งจำนวนให้เต็ม Max (${maxVal} ${unitStr})">
+                <i class="fas fa-level-up-alt"></i><span>เติม Max (${maxVal})</span>
               </button>
+            </td>
+            <td class="text-end align-middle py-2" id="budget-subtotal-${it.id}" style="font-size:0.9rem;">
+              ฿${subtotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}
             </td>
           </tr>
         `;
@@ -9747,6 +9893,11 @@
       if (history.length > 50) history.pop();
       saveBudgetHistory(history);
 
+      // Async sync to Supabase Database
+      if (typeof apiCall === 'function') {
+        apiCall('saveProcurementPlan', newPlan).catch(e => console.warn('Supabase plan save error:', e));
+      }
+
       return newPlan;
     }
 
@@ -10060,6 +10211,11 @@
         plan.name = newName.trim();
         saveBudgetHistory(history);
         renderBudgetHistoryList(document.getElementById('budget-history-search')?.value || '');
+
+        // Async sync rename to Supabase Database
+        if (typeof apiCall === 'function') {
+          apiCall('renameProcurementPlan', planId, newName.trim()).catch(e => console.warn('Supabase plan rename error:', e));
+        }
       }
     }
 
@@ -10084,6 +10240,11 @@
       saveBudgetHistory(updated);
       renderBudgetHistoryList(document.getElementById('budget-history-search')?.value || '');
       updateBudgetHistoryBadge();
+
+      // Async sync delete to Supabase Database
+      if (typeof apiCall === 'function') {
+        apiCall('deleteProcurementPlan', planId).catch(e => console.warn('Supabase plan delete error:', e));
+      }
 
       Swal.fire({
         toast: true,
